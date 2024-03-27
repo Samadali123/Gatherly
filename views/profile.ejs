@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whatsapp | profile </title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+
+    <div class="main ">
+        <div class="left ">
+            <div class="top flex items-center justify-between ">
+                <div class="userdets">
+                    <div class="userprofile">
+                        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxAQDxAQDRAQDhEPDw0QDQ0RDQ8NEg0QFREXFhYRExUYHSggGBolGxMTLTEhJikrLi4uGB8zOD8tNygtLisBCgoKDQ0NDg0NDysZExkrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrK//AABEIAOEA4QMBIgACEQEDEQH/xAAbAAEBAAMBAQEAAAAAAAAAAAAABAIDBQEGB//EACwQAQABAgQFAwMFAQAAAAAAAAABAgMEESExQVFhcZESgbEiMqEFQlKSwdH/xAAVAQEBAAAAAAAAAAAAAAAAAAAAAf/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AP3EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaq78R17NNWInhp+QViCbkzxnyxB0RzmUVzG0z5BeI6cRVx1bqMRE76A3AAAAAAAAAAAAAAAAAAA13rvp78IB7cuRTv4S3Lsz0jkwqnPWXioAANVWIpjr2T373q0jb5agWRiKesd4bonk5rZauzTPTjALh5E56w9BnbuTTt4VWrsVdJ5IiJB0RpsXs9J3+W5FAAAAAAAAAAAAAAYXa/TGfhFVOc5yzvXPVPSNmtQAEGnFV5U5c/huS4udY7AnAAABVhK945awoRYafqjrmtAAAiVtm56o6xuiZW68pz89gXjyJzeooAAAAAAAAAA1YivKnvo2pMVV9WXKAaQFQAASYv7vaPmVafGU7T7AlAAABtw/3R7/C1JhKdZnlCsAAAAFWFr0y5fDeisVZVR10WooAAAAAAAAAAguTnVPeV7nAAKgAAxrpziYniyAc6qnKcpeL7tqKt9+EpqsPVG2vuDS9iGynD1csu8qLVmKes8wZWaPTGXnuzAAAAACJdGHOX2/tjtHwisgAAAAAAAAAHOdFBcjKZ7yDEBUATYm9wj3n/AAFE1RG8xHvD1zWdu5NO3gF40UYmJ30/MNsVxwmPIMhjNcc48w114imNtQbmPrjnHmEdy7NW+3JrB0hJh72U5TtO3RWAAAvt/bHaPhA6EQivQAAAAAAAAAEeJp+rusacTTnGfL4BIAqPJnLXk58znOfNXiqsqe+iMAAAAAAAAB0LdWcRLnqsJVpMctQUAAzs051R5XJ8JRvPtChFAAAAAAAAAAAAQ3aPTOXjswW3rfqjrwRVaZ58N1RHiqs6suUNL2qc5mebwAAAAAAAABssVZVR10awHSe0U5zlDC3VnETzW4e1lGc7z+AbaYyjKOD0EUAAAAAAAAAAAATY2xNVM+n7vlSA+dmMtJ0mN45PHaxWEpr12q4Vf9cq/YqonKqO08J91RqAAAAAAAAGdq1VVOVMZ/53dXCYKKNavqq/FPYGP6fh5ppzr33iOXdaCKAAAAAAAAAAAAAAAAPKqYmMpjOOU6vQEN79NpnWifT03hFcwVyn9ufWnV2wHzsxlvp30ePopjPfVhNij+FP9YBwCHfixR/Cn+sM6aYjaIjtGQOJbwlyramY6z9Kyz+mR++c+kaR5dABjboimMqYiI5QyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH/2Q=="
+                            alt="">
+                    </div>
+                    <h3>
+                        <%= loggedinuser.username %>
+                    </h3>
+                </div>
+
+                <div class="icons px-5 flex gap-5">
+
+                    <button onclick="CreateNewGroup()">  <i class="ri-add-line text-lg"></i></button>
+                    <button onclick="joinGroup()"><i class="ri-user-add-line text-lg"></i></button>
+
+                </div>
+            </div>
+
+            <div class="chatsarea">
+
+
+            </div>
+        </div>
+        <div class="right">
+            <img src="/images/chatimage.png" alt="">
+        </div>
+
+        <div class="right-2">
+            <div class="top">
+                <div class="chatuserdets">
+                    <i id="back" class="ri-arrow-left-line"></i>
+                    <div class="chatuserprofile">
+                        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxAQDxAQDRAQDhEPDw0QDQ0RDQ8NEg0QFREXFhYRExUYHSggGBolGxMTLTEhJikrLi4uGB8zOD8tNygtLisBCgoKDQ0NDg0NDysZExkrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrK//AABEIAOEA4QMBIgACEQEDEQH/xAAbAAEBAAMBAQEAAAAAAAAAAAAABAIDBQEGB//EACwQAQABAgQFAwMFAQAAAAAAAAABAgMEESExQVFhcZESgbEiMqEFQlKSwdH/xAAVAQEBAAAAAAAAAAAAAAAAAAAAAf/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AP3EAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaq78R17NNWInhp+QViCbkzxnyxB0RzmUVzG0z5BeI6cRVx1bqMRE76A3AAAAAAAAAAAAAAAAAAA13rvp78IB7cuRTv4S3Lsz0jkwqnPWXioAANVWIpjr2T373q0jb5agWRiKesd4bonk5rZauzTPTjALh5E56w9BnbuTTt4VWrsVdJ5IiJB0RpsXs9J3+W5FAAAAAAAAAAAAAAYXa/TGfhFVOc5yzvXPVPSNmtQAEGnFV5U5c/huS4udY7AnAAABVhK945awoRYafqjrmtAAAiVtm56o6xuiZW68pz89gXjyJzeooAAAAAAAAAA1YivKnvo2pMVV9WXKAaQFQAASYv7vaPmVafGU7T7AlAAABtw/3R7/C1JhKdZnlCsAAAAFWFr0y5fDeisVZVR10WooAAAAAAAAAAguTnVPeV7nAAKgAAxrpziYniyAc6qnKcpeL7tqKt9+EpqsPVG2vuDS9iGynD1csu8qLVmKes8wZWaPTGXnuzAAAAACJdGHOX2/tjtHwisgAAAAAAAAAHOdFBcjKZ7yDEBUATYm9wj3n/AAFE1RG8xHvD1zWdu5NO3gF40UYmJ30/MNsVxwmPIMhjNcc48w114imNtQbmPrjnHmEdy7NW+3JrB0hJh72U5TtO3RWAAAvt/bHaPhA6EQivQAAAAAAAAAEeJp+rusacTTnGfL4BIAqPJnLXk58znOfNXiqsqe+iMAAAAAAAAB0LdWcRLnqsJVpMctQUAAzs051R5XJ8JRvPtChFAAAAAAAAAAAAQ3aPTOXjswW3rfqjrwRVaZ58N1RHiqs6suUNL2qc5mebwAAAAAAAABssVZVR10awHSe0U5zlDC3VnETzW4e1lGc7z+AbaYyjKOD0EUAAAAAAAAAAAATY2xNVM+n7vlSA+dmMtJ0mN45PHaxWEpr12q4Vf9cq/YqonKqO08J91RqAAAAAAAAGdq1VVOVMZ/53dXCYKKNavqq/FPYGP6fh5ppzr33iOXdaCKAAAAAAAAAAAAAAAAPKqYmMpjOOU6vQEN79NpnWifT03hFcwVyn9ufWnV2wHzsxlvp30ePopjPfVhNij+FP9YBwCHfixR/Cn+sM6aYjaIjtGQOJbwlyramY6z9Kyz+mR++c+kaR5dABjboimMqYiI5QyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH/2Q=="
+                            alt="">
+                    </div>
+                    <h3>
+                        chat username
+                    </h3>
+                </div>
+            </div>
+            <div class="middle">
+
+            </div>
+            <div class="bottom">
+                <input type="text" placeholder="Type a message">
+                <button id="send">send</button>
+            </div>
+        </div>
+
+
+    </div>
+
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "gilroy";
+            color: white;
+        }
+        
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .main {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-color: white;
+            display: flex;
+        }
+        
+        .left {
+            width: 25%;
+            height: 100%;
+            position: relative;
+            background-color: #111B21;
+        }
+        
+        .left .top {
+            width: 100%;
+            height: 11%;
+            position: relative;
+            padding: 20px 15px;
+            background-color: #202C33;
+        }
+        
+        .top .userprofile,
+        .chatprofile {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        
+        .userprofile,
+        .chatprofile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+        
+        .userdets {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .chatsarea {
+            width: 100%;
+            height: calc(100% - 11%);
+            background-color: #111B21;
+            / position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 25px 0px;
+        }
+        
+        .chatsarea::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .chat {
+            width: 100%;
+            height: 80px;
+            border-bottom: 0.5px solid rgba(192, 192, 192, 0.452);
+            margin-bottom: 10px;
+            transform: all linear 3s;
+            padding-left: 10px;
+        }
+        
+        .chat:hover {
+            background-color: #202C33;
+        }
+        
+        .chatdets {
+            display: flex;
+            gap: 15px;
+            align-items: top;
+            padding: 10px 5px;
+        }
+        
+        .chatdets h3 {
+            font-size: 20px;
+        }
+        
+        .right {
+            width: 75%;
+            height: 100%;
+            position: relative;
+            background-color: #222E35;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .right img {
+            width: 33%;
+        }
+        
+        .right-2 {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-color: #222E35;
+            display: none;
+        }
+        
+        .right-2 .top {
+            width: 100%;
+            position: relative;
+            height: 11%;
+            padding: 20px 15px;
+            background-color: #202C33;
+        }
+        
+        .right-2 .top .chatuserdets {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .chatuserdets .chatuserprofile {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        
+        .chatuserprofile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .right-2 .middle {
+            width: 100%;
+            height: 80%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background-color: #0B141A;
+            padding: 30px;
+        }
+        
+        .middle::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .middle .incomingmessage {
+            color: white;
+            background-color: #202C33;
+            width: fit-content;
+            padding: 5px 10px;
+            border-radius: 5px;
+            max-width: 200px;
+            margin-bottom: 19px;
+        }
+        
+        .middle .outgoingmessage {
+            color: white;
+            background-color: #005C4B;
+            width: fit-content;
+            padding: 5px 10px;
+            border-radius: 5px;
+            max-width: 200px;
+            margin-left: auto;
+            margin-bottom: 19px;
+        }
+        
+        .right-2 .bottom {
+            width: 100%;
+            height: 9%;
+            position: relative;
+            background-color: #202C33;
+            display: flex;
+        }
+        
+        .right-2 .bottom input {
+            outline: none;
+            color: silver;
+            border: none;
+            width: 91%;
+            background-color: #2A3942;
+            padding: 0 30px;
+        }
+        
+        #back {
+            margin-right: 20px;
+            font-size: 1.2rem;
+            margin-left: 20px;
+        }
+        
+        .right-2 .bottom button {
+            outline: none;
+            width: 9%;
+            background-color: #202C33;
+            cursor: pointer;
+        }
+        
+        @media screen and (max-width: 600px) {
+            .main {
+                width: 100vw;
+                height: 100vh;
+            }
+            .left {
+                width: 100%;
+            }
+            .right {
+                display: none;
+            }
+            .right-2 {
+                position: relative;
+                width: 100vw;
+                height: 100vh;
+            }
+            .right-2 .top {
+                width: 100%;
+                height: 8%;
+                padding: 10px 10px;
+            }
+            .right-2 .middle {
+                width: 100%;
+                height: 86%;
+                padding: 20px 15px;
+            }
+            .middle .incomingmessage {
+                color: white;
+                background-color: #202C33;
+                width: fit-content;
+                padding: 3px 8px;
+                border-radius: 5px;
+                max-width: 150px;
+                margin-bottom: 23px;
+            }
+            .middle .outgoingmessage {
+                color: white;
+                background-color: #005C4B;
+                width: fit-content;
+                padding: 3px 8px;
+                border-radius: 5px;
+                max-width: 150px;
+                margin-left: auto;
+                margin-bottom: 23px;
+            }
+            .outgoingmessage,
+            .incomingmessage p {
+                font-size: 0.8em;
+            }
+            .right-2 .bottom {
+                width: 100%;
+                height: 6%;
+                position: fixed;
+                bottom: 0%;
+                background-color: none;
+            }
+            .right-2 .bottom input {
+                width: 87%;
+                height: 100%;
+                background-color: none;
+            }
+            .right-2 .bottom button {
+                width: 13%;
+                height: 100%;
+                background-color: none;
+            }
+        }
+    </style>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+
+        socket.emit('join-server', {
+            username: `<%= loggedinuser.username %>`,
+            profileImage: `<%= loggedinuser.profileImage %>`
+        })
+
+        let sender = `<%= loggedinuser.username %>`;
+        let currentchatuser = null;
+
+        socket.on(`new-user-join`, async(user) => {
+
+            chatappend(user.username, user.profileImage);
+
+        })
+
+
+
+        socket.on(`receive-private-message`, async(messageobject) => {
+
+            putincomingmessage(messageobject.message)
+        })
+
+        function putincomingmessage(message) {
+            if (message.value === "") {
+                return;
+            }
+
+            const template = `<div class="incomingmessage">
+                <p>${message}</p>
+            </div>`
+
+
+            document.querySelector(".right-2 .middle").innerHTML += template;
+
+        }
+
+
+        function putoutgoingmessage(message) {
+
+
+            const template = `<div class="outgoingmessage">
+                <p>${message}</p>
+            </div>`
+
+            document.querySelector(".right-2 .middle ").innerHTML += template;
+
+        }
+
+
+        document.querySelector("#send").addEventListener("click", function() {
+            sendMessage();
+        })
+
+
+        function sendMessage() {
+
+            const message = document.querySelector('.right-2 .bottom input').value
+
+
+            putoutgoingmessage(message)
+            document.querySelector('.right-2 .bottom input').value = ""
+
+            socket.emit(`private-message`, {
+                message: message,
+                sender: `<%= loggedinuser.username %>`,
+                receiver: currentchatuser,
+            })
+
+        }
+
+
+
+        function chatappend(username, profileImage) {
+
+
+            if (document.querySelector(`#${username}`)) {
+                return;
+            }
+
+            const template = ` <div   onclick="setcurrentchat('${username}','${profileImage}') "  class="chat"  id= "${username}">
+                <div class="chatdets">
+                    <div class="chatprofile">
+                        <img src="${profileImage}" alt="">
+                    </div>
+
+                    <h3>${username}</h3>
+
+                </div>
+            </div>`
+
+            document.querySelector(".chatsarea").innerHTML += template;
+
+        }
+
+
+
+        function setcurrentchat(username, profileImage) {
+
+
+            document.querySelector(".right").style.display = "none";
+            document.querySelector(".right-2").style.display = "block";
+            document.querySelector(".right-2 .chatuserdets .chatuserprofile  img").setAttribute(`src`, profileImage);
+            document.querySelector(".right-2  .chatuserdets  h3").textContent = username;
+            document.querySelector(".right-2  .middle").innerHTML = "";
+
+            currentchatuser = username;
+
+            socket.emit('fetch-conversation', {
+                receiver: username,
+                sender: sender
+            })
+
+
+
+        }
+
+
+
+        function rightoriginal() {
+
+            document.querySelector(".right").style.display = "flex";
+            document.querySelector(".right").style.alignItems = "center";
+            document.querySelector(".right").style.justifyContent = "center";
+
+
+        }
+
+
+        document.querySelector('#back').addEventListener("click", function(e) {
+
+            document.querySelector(".right-2").style.display = "none";
+            document.querySelector(".left").style.display = "block";
+
+            rightoriginal()
+
+        })
+
+
+
+        socket.on('send-conversation', allMessages => {
+            allMessages.forEach(message => {
+                if (message.sender === sender) {
+                    putoutgoingmessage(message.msg);
+                } else {
+                    putincomingmessage(message.msg);
+                }
+            })
+
+            document.querySelector(".left").style.display = "none";
+        })
+
+
+        function CreateNewGroup() {
+            const groupName = prompt("Enter a Group name to create new group");
+            if (!groupName) {
+                return;
+            }
+
+            socket.emit(`create-new-group`, {
+                groupName,
+                sender,
+            })
+
+
+        }
+
+
+        socket.on(`group-created`, async(groupdets) => {
+            alert("Group is created successfully");
+            chatappend(groupdets.name, groupdets.profileImage)
+
+        })
+
+
+        function joinGroup() {
+
+            const groupName = prompt("Enter a group name to join ?")
+
+            socket.emit(`join-group`, {
+                groupName,
+                sender,
+
+            })
+
+        }
+
+
+        socket.on(`all-groups`, async(groupdets) => {
+            chatappend(groupdets.name, groupdets.profileImage)
+
+        })
+
+
+        socket.on(`group-joined`, async(groupdets) => {
+            alert(`joined ${groupdets.name} successfully`);
+
+            chatappend(groupdets.name, groupdets.profileImage);
+        })
+
+
+        socket.on(`not-found`, async(groupdets) => {
+            alert(`${groupdets.groupName} does not exist !`);
+        })
+    </script>
+
+
+
+
+
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <link rel="stylesheet" href="/images/style.css"> -->
+    <title>Whatsapp log in or Sign up</title>
+
+</head>
+
+<div class="container">
+    <h1>Whatsapp Log in or Sign up</h1>
+
+    <div class="form">
+        <form action="/register" method="post">
+
+            <input name="username" type="text" placeholder="username">
+
+
+            <input name="number" type="number" placeholder="mobile number">
+
+
+            <input name="password" type="password" placeholder="password">
+            <input type="submit" value="create Account">
+
+            <a href="/login">
+                <p>Already have an account ? Sign in</p>
+            </a>
+        </form>
+
+
+    </div>
+</div>
+
+<body>
+
+
+
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "gilroy";
+            color: white;
+        }
+        
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-color: #111B21;
+        }
+        
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            position: relative;
+            top: 100px;
+        }
+        
+        form {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            position: relative;
+            top: 200px;
+        }
+        
+        form input {
+            display: block;
+            outline: none;
+            border: none;
+            width: 35%;
+            border-radius: 10px;
+            padding: 20px 10px;
+            font-size: 20px;
+            color: black;
+        }
+        
+        input[type="submit"] {
+            background-color: rgb(101, 239, 101);
+            color: black;
+            cursor: pointer;
+        }
+        
+        a {
+            text-decoration: none;
+            transition: all ease 3s;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        @media screen and (max-width: 600px) {
+            .container {
+                position: relative;
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+            }
+            h1 {
+                font-size: 1.4rem;
+            }
+            form input {
+                width: 70%;
+                height: 8%;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</body>
+
+</html>
