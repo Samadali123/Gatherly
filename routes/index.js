@@ -9,17 +9,12 @@ passport.use(new localStrategy(userModel.authenticate()))
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-
     res.render('index');
-
 });
 
 
 router.get(`/login`, function(req, res) {
-
-    const error = req.flash('error');
-
-    res.render('login', { error });
+    res.render('login', );
 })
 
 
@@ -39,6 +34,8 @@ router.post('/register', async(req, res, next) => {
     }
 
 
+
+
     try {
         var newUser = {
             //user data here
@@ -49,7 +46,7 @@ router.post('/register', async(req, res, next) => {
 
         const User = await userModel.findOne({ username: username });
         if (User) {
-            return res.status(401).json({ success: false, message: "User already registered" });
+            return res.status(401).render("user");
         }
 
 
@@ -65,16 +62,20 @@ router.post('/register', async(req, res, next) => {
                 res.send(err);
             });
     } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
+        return res.status(500).render("server");
     }
 });
 
+
+router.get("/loginError", (req, res, next) => {
+    res.render("loginError")
+})
 
 
 router.post('/login',
     passport.authenticate('local', {
         successRedirect: '/profile',
-        failureRedirect: '/login',
+        failureRedirect: '/loginError',
         failureFlash: true,
     }),
     (req, res, next) => {}
@@ -83,9 +84,12 @@ router.post('/login',
 
 function isloggedIn(req, res, next) {
     if (req.isAuthenticated()) return next();
-    else res.redirect('/login');
+    else res.redirect('/unauthorized');
 }
 
+router.get("/unauthorized", (req, res, next) => {
+    res.render("pleaselogin")
+})
 
 router.get('/logout', (req, res, next) => {
     if (req.isAuthenticated())
