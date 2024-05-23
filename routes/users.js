@@ -1,6 +1,14 @@
 const mongoose = require('mongoose');
 
-mongoose.connect("mongodb://0.0.0.0:27017/Whatsapp-clone")
+// mongoose.connect("mongodb://0.0.0.0:27017/Whatsapp-clone")
+
+mongoose.connect("mongodb+srv://samadali0125:Samad%40123@cluster0.ed4mh9k.mongodb.net/Whatsapp?retryWrites=true&w=majority&appName=Cluster0")
+    .then(function() {
+        console.log("DB connected successfully.");
+    })
+    .catch(function(error) {
+        console.log("There was an Error while connecting to a database.", error);
+    });
 
 
 const plm = require('passport-local-mongoose')
