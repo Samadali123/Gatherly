@@ -1,4 +1,4 @@
-# WhatsApp-like Mini App with Socket.io and Passport.js
+# Gatherly a chatting app which gather different different users through chatting
 
 This project is a mini application similar to WhatsApp, built using Node.js, Express.js, MongoDB, Socket.io for real-time messaging, and Passport.js for authentication/authorization. It includes features for one-to-one chat, group chat, online/offline status tracking using Socket IDs, and secure user authentication.
 
