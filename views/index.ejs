@@ -4,122 +4,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- <link rel="stylesheet" href="/images/style.css"> -->
-    <title>Whatsapp log in or Sign up</title>
-
-</head>
-
-<div class="container">
-    <h1>Whatsapp Log in or Sign up</h1>
-
-    <div class="form">
-        <form action="/register" method="post">
-
-            <input required name="username" type="text" placeholder="username">
-
-
-            <input required name="number" type="number" placeholder="mobile number">
-
-
-            <input required name="password" type="password" placeholder="password">
-            <input type="submit" value="create Account">
-
-            <a href="/login">
-                <p>Already have an account ? Sign in</p>
-            </a>
-        </form>
-
-
-    </div>
-</div>
-
-<body>
-
-
-
-
+    <title>Gatherly Login or Sign Up</title>
     <style>
+        /* Resetting styles */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "gilroy";
-            color: white;
+            font-family: Arial, sans-serif;
+            color: #ffffff;
         }
-        
-        html,
-        body {
+
+        /* Full-height background with gradient */
+        html, body {
             width: 100%;
             height: 100%;
+            background: linear-gradient(135deg, #00A884, #075E54);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        
+
+        /* Main container styling */
         .container {
-            width: 100%;
-            height: 100%;
-            position: relative;
+            max-width: 400px;
+            width: 90%;
             background-color: #111B21;
-        }
-        
-        h1 {
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
             text-align: center;
-            font-weight: 600;
-            position: relative;
-            top: 100px;
         }
-        
-        form {
+
+        /* Title styling */
+        .container h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #00A884;
+        }
+
+        /* Form and input styling */
+        .form form {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-            position: relative;
-            top: 200px;
+            gap: 1rem;
         }
-        
-        form input {
-            display: block;
-            outline: none;
+
+        .form input[type="text"],
+        .form input[type="number"],
+        .form input[type="password"] {
+            width: 100%;
+            padding: 0.8rem;
             border: none;
-            width: 35%;
-            border-radius: 10px;
-            padding: 20px 10px;
-            font-size: 20px;
-            color: black;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #333;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
-        input[type="submit"] {
-            background-color: rgb(101, 239, 101);
-            color: black;
+
+        /* Submit button styling */
+        .form input[type="submit"] {
+            background-color: #00A884;
+            color: #ffffff;
+            font-weight: bold;
+            padding: 0.8rem;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
-        
-        a {
+
+        .form input[type="submit"]:hover {
+            background-color: #007e6d;
+        }
+
+        /* Link styling */
+        .form a {
+            color: #00A884;
             text-decoration: none;
-            transition: all ease 3s;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            transition: color 0.3s;
         }
-        
-        a:hover {
-            text-decoration: underline;
+
+        .form a:hover {
+            color: #007e6d;
         }
-        
+
+        /* Responsive adjustments */
         @media screen and (max-width: 600px) {
             .container {
-                position: relative;
-                width: 100vw;
-                height: 100vh;
-                overflow: hidden;
+                padding: 1.5rem;
             }
-            h1 {
-                font-size: 1.4rem;
+            .container h1 {
+                font-size: 1.5rem;
             }
-            form input {
-                width: 70%;
-                height: 8%;
-                font-size: 1rem;
+            .form input[type="text"],
+            .form input[type="number"],
+            .form input[type="password"],
+            .form input[type="submit"] {
+                padding: 0.7rem;
+                font-size: 0.9rem;
             }
         }
     </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Gatherly Login or Sign Up</h1>
+        <div class="form">
+            <form action="/register" method="post">
+                <input required name="username" type="text" placeholder="Username">
+                <input required name="number" type="number" placeholder="Mobile Number">
+                <input required name="password" type="password" placeholder="Password">
+                <input type="submit" value="Create Account">
+                <a href="/login">Already have an account? Sign in</a>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>

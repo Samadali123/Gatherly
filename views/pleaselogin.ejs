@@ -4,95 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Whatsapp | Please Login to your Account</title>
+    <title>Gatherly | Please Login to Your Account</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
     <style>
-        .container {
-            max-width: 1280px;
-            margin: auto;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                max-width: 100%;
-            }
-        }
-        
-        .section {
-            padding: 80px 0;
-        }
-        
-        .access-denied {
-            color: #ffffff;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            text-align: center;
-        }
-        
-        .access-denied:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
-        }
-        
-        .access-denied h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-        }
-        
-        .access-denied p {
-            font-size: 1.25rem;
-            margin-bottom: 20px;
-        }
-        
-        .btn-login {
-            background-color: rgb(101, 239, 101);
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            padding: 12px 24px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        
-        .btn-login:hover {
-            background-color: rgb(101, 239, 101);
-        }
-        
-        .btn-login:focus {
-            outline: none;
-        }
-        /* Add animation */
-        
-        @keyframes bounce {
-            0% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-            100% {
-                transform: translateY(0);
-            }
-        }
-        
-        .btn-login:hover {
-            animation: bounce 0.5s infinite;
+        body {
+            background-color: #1f2937;
+            font-family: 'Segoe UI', sans-serif;
         }
     </style>
 </head>
 
 <body class="bg-gray-900 min-h-screen flex justify-center items-center">
-    <div class="container">
-        <div class="section">
-            <div class="access-denied">
-                <h1 class="mb-7">Access Denied</h1>
-                <p class="mb-4">Sorry, you didn't log in. Please log in to access the resources.</p>
-                <a href="/login" class="btn-login">Log In</a>
-            </div>
+    <div class="max-w-md w-full p-6 bg-gray-800 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+        <h1 class="text-3xl font-bold text-white text-center mb-4">Access Denied</h1>
+        <p class="text-lg text-gray-300 text-center mb-6">Sorry, you didn't log in. Please log in to access the resources.</p>
+        <div class="flex justify-center">
+            <a href="/login" class="bg-[#007E6D] text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-300 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50">
+                Log In
+            </a>
         </div>
     </div>
 </body>

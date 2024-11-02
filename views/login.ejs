@@ -4,113 +4,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- <link rel="stylesheet" href="/images/style.css"> -->
-    <title>Whatsapp log in or Sign up</title>
-
-</head>
-
-<div class="container">
-    <h1>Whatsapp Log in or Sign up</h1>
-
-    <div class="form">
-        <form action="/login" method="post">
-
-            <input required name="username" type="text" placeholder="username">
-            <input required name="password" type="password" placeholder="password">
-            <input type="submit" value="Sign in">
-
-
-            <a href="/">
-                <p>Don't have an account ? Sign up</p>
-            </a>
-        </form>
-
-
-    </div>
-</div>
-
-<body>
-
-
-
-
+    <title>Gatherly Login or Sign Up</title>
     <style>
+        /* Base reset */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "gilroy";
-            color: white;
+            font-family: Arial, sans-serif;
         }
-        
-        html,
-        body {
+
+        /* Background and layout setup */
+        html, body {
             width: 100%;
             height: 100%;
-        }
-        
-        .container {
-            width: 100%;
-            height: 100%;
-            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background-color: #111B21;
+            padding: 1rem;
         }
-        
-        h1 {
+
+        /* Main container styling */
+        .container {
+            max-width: 360px;
+            width: 100%;
+            background-color: #1A242A;
+            padding: 2rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
             text-align: center;
-            font-weight: 600;
-            position: relative;
-            top: 100px;
         }
-        
+
+        /* Title styling */
+        h1 {
+            font-size: 1.5rem;
+            color: #00A884;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Form styling */
         form {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-            position: relative;
-            top: 200px;
+            gap: 1.2rem;
         }
-        
-        form input {
-            display: block;
-            outline: none;
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem;
             border: none;
-            width: 35%;
-            border-radius: 10px;
-            padding: 20px 10px;
-            font-size: 20px;
-            color: black;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #333;
+            background-color: #E9E9E9;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
         }
-        
+
+        /* Submit button styling */
         input[type="submit"] {
-            background-color: rgb(101, 239, 101);
-            color: black;
+            background-color: #00A884;
+            color: white;
+            font-weight: bold;
+            padding: 0.8rem;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 1rem;
         }
-        
-        a {
+
+        input[type="submit"]:hover {
+            background-color: #007e6d;
+        }
+
+        /* Sign-up link styling */
+        .signup-link {
+            margin-top: 1rem;
+            color: #00A884;
+            font-size: 0.9rem;
             text-decoration: none;
-            transition: all ease 3s;
+            transition: color 0.3s;
         }
-        
-        a:hover {
-            text-decoration: underline;
+
+        .signup-link:hover {
+            color: #007e6d;
         }
-        
-        @media screen and (max-width: 600px) {
+
+        /* Responsive styling */
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem;
+            }
+
             h1 {
                 font-size: 1.4rem;
-                font-weight: 500;
+                margin-bottom: 1rem;
             }
-            .form input {
-                font-size: 17px;
-                width: 70%;
-                height: 9%;
+
+            input[type="text"],
+            input[type="password"],
+            input[type="submit"] {
+                padding: 0.7rem;
+                font-size: 0.95rem;
             }
         }
     </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Gatherly Login or Sign Up</h1>
+        <form action="/login" method="post">
+            <input required name="username" type="text" placeholder="Username">
+            <input required name="password" type="password" placeholder="Password">
+            <input type="submit" value="Sign in">
+            <a href="/" class="signup-link">Don't have an account? Sign up</a>
+        </form>
+    </div>
 </body>
 
 </html>
