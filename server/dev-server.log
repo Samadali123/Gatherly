@@ -1,0 +1,6 @@
+
+> whatsapp@0.0.0 start
+> node server.js
+
+2026-05-05 21:45:52 [32minfo[39m: MongoDB connected on attempt 1
+2026-05-05 21:45:52 [31merror[39m: Server error: listen EADDRINUSE: address already in use :::5000

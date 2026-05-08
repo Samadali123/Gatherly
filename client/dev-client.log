@@ -1,0 +1,14 @@
+
+> gatherly-client@0.0.0 dev
+> vite --host 127.0.0.1
+
+Re-optimizing dependencies because lockfile has changed
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m880[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m11:04:52 pm[22m [36m[1m[vite][22m[39m [32mvite.config.js changed, restarting server...[39m
+[2m11:04:53 pm[22m [36m[1m[vite][22m[39m server restarted.
+[2m11:05:02 pm[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/features/chat/components/ConversationList.jsx[22m
+[2m11:07:05 pm[22m [36m[1m[vite][22m[39m [32mvite.config.js changed, restarting server...[39m
+[2m11:07:05 pm[22m [36m[1m[vite][22m[39m server restarted.

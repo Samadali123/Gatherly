@@ -1,0 +1,1 @@
+import{j as r}from"./vendor-tldraw-C2e0XBpf.js";function n(){return r.jsx("span",{"aria-hidden":"true",className:"h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current"})}export{n as B};

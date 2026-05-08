@@ -1,3 +1,0 @@
-// handle 404 error page
-// handle register dont provide detaisls page handling
-// handle login page dont show error after providing details for again login
