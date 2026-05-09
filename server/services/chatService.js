@@ -1,8 +1,7 @@
-const mongoose = require('mongoose');
 const messageModel = require('../models/message.model');
 const groupService = require('./groupService');
 const userService = require('./userService');
-const { buildDirectChatId, computeExpiresAt } = require('../utils/chat');
+const { buildDirectChatId, buildDirectChatIds, computeExpiresAt, isDirectChatId } = require('../utils/chat');
 const { buildReplyToPreview } = require('../utils/replyPreview');
 
 const resolveChatMeta = async ({ senderUser, receiver }) => {
@@ -31,12 +30,6 @@ const createMessage = async ({ message, senderUser, receiver, ttl = null, parent
     const parent = await messageModel.findById(parentMessageId);
 
     if (!parent || parent.chatId !== chatMeta.chatId) {
-      const error = new Error('You cannot reply to this message');
-      error.statusCode = 403;
-      throw error;
-    }
-
-    if (parent.sender !== senderUser.username) {
       const error = new Error('You cannot reply to this message');
       error.statusCode = 403;
       throw error;
@@ -73,7 +66,7 @@ const getConversation = async ({ sender, receiver, isGroupConversation, userId }
 
   return messageModel
     .find({
-      chatId: buildDirectChatId(sender, receiver),
+      chatId: { $in: buildDirectChatIds(sender, receiver) },
       hiddenFor: { $ne: userId },
     })
     .sort({ createdAt: 1 });
@@ -131,7 +124,7 @@ const userCanAccessMessage = async (user, message) => {
     return false;
   }
 
-  if (message.chatId && mongoose.Types.ObjectId.isValid(message.chatId)) {
+  if (message.chatId && !isDirectChatId(message.chatId)) {
     const group = await groupService.findById(message.chatId);
     return !!group && group.users.some((userId) => userId.toString() === user._id.toString());
   }

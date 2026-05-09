@@ -11,7 +11,6 @@ const RegisterPage = lazy(() => import('./features/auth/pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./features/auth/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPasswordPage'));
 const ChatPage = lazy(() => import('./features/chat/pages/ChatPage'));
-const AnonymousVideoPage = lazy(() => import('./features/video/pages/AnonymousVideoPage'));
 const CreateRoomPage = lazy(() => import('./features/rooms/pages/CreateRoomPage'));
 const AnonRoomPage = lazy(() => import('./features/rooms/pages/AnonRoomPage'));
 const NotificationsSettingsPage = lazy(() => import('./features/notifications/pages/NotificationsSettingsPage'));
@@ -82,8 +81,6 @@ export default function App() {
         </Route>
 
         <Route path="/room/:code" element={<AnonRoomPage />} />
-        <Route path="/anonymous-video" element={<AnonymousVideoPage />} />
-
         <Route path="/" element={<Navigate replace to="/chat" />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

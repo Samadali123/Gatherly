@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  username          String?  @unique
+  number            Int?
+  phone             String   @default("")
+  bio               String   @default("")
+  password          String
+  role              String   @default("personal")
+  profileImage      String   @default("https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-image-182145777.jpg")
+  avatar            String?
+  socketId          String   @default("")
+  refreshTokenHash  String?
+  tokenVersion      Int      @default(0)
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  dndEnabled        Boolean  @default(false)
+  dndSchedule       Json?
+  dndPeriod         Json?
+  dndWhitelist      String[] @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  userType  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("password_reset_tokens")
+}
+
+model Message {
+  id              String    @id @default(cuid())
+  msg             String    @default("")
+  sender          String
+  receiver        String
+  chatId          String?
+  expiresAt       DateTime?
+  ttl             String?
+  isPinned        Boolean   @default(false)
+  pinnedBy        String?
+  parentMessageId String?
+  replyTo         Json?
+  attachments     Json     @default("[]")
+  hiddenFor       String[]  @default([])
+  readBy          String[]  @default([])
+  statusContext   Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([chatId])
+  @@index([parentMessageId])
+  @@map("messages")
+}
+
+model Group {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  profileImage String   @default("https://imgs.search.brave.com/0bM_YGELGhDRpkha170xdj62rM1gANg5mUFtcD3Jcqw/rs:fit:860:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzLzJmLzU5/L2VmLzJmNTllZjc0/M2ZkYjliZmNmN2Yw/YTIxYjYzYTAwZjdlLmpwZw")
+  users        String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("groups")
+}
+
+model Poll {
+  id          String    @id @default(cuid())
+  question    String
+  options     Json      @default("[]")
+  chatId      String
+  createdBy   String
+  expiresAt   DateTime?
+  isAnonymous Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([chatId])
+  @@map("polls")
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@map("reactions")
+}
+
+model Status {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  text      String   @default("")
+  mediaUrl  String   @default("")
+  style     Json?
+  replies   Json     @default("[]")
+  reactions Json     @default("[]")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("statuses")
+}
+
+model Call {
+  id          String    @id @default(cuid())
+  callId      String    @unique
+  roomId      String
+  callerId    String?
+  receiverId  String?
+  status      String    @default("calling")
+  type        String    @default("one-to-one")
+  startedAt   DateTime  @default(now())
+  connectedAt DateTime?
+  endedAt     DateTime?
+  duration    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([roomId])
+  @@index([callerId])
+  @@index([receiverId])
+  @@index([status])
+  @@map("calls")
+}
+
+model AnonRoom {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String   @default("")
+  createdBy       String?
+  expiresAt       DateTime
+  passwordHash    String?
+  maxParticipants Int      @default(50)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([code])
+  @@index([expiresAt])
+  @@map("anon_rooms")
+}
+
+model AnonParticipant {
+  id           String   @id @default(cuid())
+  roomCode     String
+  sessionId    String
+  alias        String
+  avatarColor  String
+  avatarAnimal String
+  joinedAt     DateTime @default(now())
+  isOnline     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([roomCode, sessionId])
+  @@index([roomCode])
+  @@index([sessionId])
+  @@map("anon_participants")
+}
+
+model AnonMessage {
+  id                String   @id @default(cuid())
+  roomCode          String
+  sessionId         String
+  alias             String
+  avatarColor       String
+  content           String   @default("")
+  isPinned          Boolean  @default(false)
+  pinnedBySessionId String?
+  parentMessageId   String?
+  replyTo           Json?
+  reactions         Json     @default("[]")
+  attachments       Json     @default("[]")
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+
+  @@index([roomCode])
+  @@index([parentMessageId])
+  @@index([expiresAt])
+  @@map("anon_messages")
+}
+
+model AnonPoll {
+  id                 String    @id @default(cuid())
+  roomCode           String
+  question           String
+  options            Json      @default("[]")
+  createdBySessionId String
+  expiresAt          DateTime?
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([roomCode])
+  @@map("anon_polls")
+}

@@ -37,9 +37,11 @@ export default function AnonRoomPage() {
   const [meetingState, setMeetingState] = useState({ active: false, pending: [], approved: [] });
   const [kicked, setKicked] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const roomCreatorId = room?.createdBy?._id || room?.createdBy;
   const canKick = Boolean(user?.id && roomCreatorId && String(roomCreatorId) === String(user.id));
+  const canUseMeetings = user?.role === 'professional';
   const passwordRequired = Boolean(room?.requiresPassword);
 
   useEffect(() => {
@@ -162,6 +164,12 @@ export default function AnonRoomPage() {
       pushToast('This room has expired', 'error');
     });
 
+    anonSocket.on('room:deleted', ({ message }) => {
+      pushToast(message || 'This room was deleted by the host.', 'info');
+      anonSocket.emit('room:deleted:ack');
+      navigate('/rooms/new');
+    });
+
     anonSocket.on('room:meeting:state', (state) => {
       setMeetingState(state || { active: false, pending: [], approved: [] });
     });
@@ -190,7 +198,7 @@ export default function AnonRoomPage() {
       anonSocket.disconnect();
       setSocketInstance(null);
     };
-  }, [code, pushToast, session]);
+  }, [code, navigate, pushToast, session]);
 
   const roomCountdown = useMemo(() => {
     if (!room?.expiresAt) {
@@ -350,6 +358,18 @@ export default function AnonRoomPage() {
     }
   };
 
+  const deleteRoom = async () => {
+    try {
+      await api.delete(`/rooms/${code}`);
+      pushToast('Room deleted', 'success');
+      navigate('/rooms/new');
+    } catch (error) {
+      pushToast(error.response?.data?.message || 'Unable to delete room', 'error');
+    } finally {
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -376,22 +396,28 @@ export default function AnonRoomPage() {
             <Link className="rounded-full border border-brand-primary bg-brand-subtle px-4 py-2 text-[13px] font-medium text-brand-primary" to="/rooms/new">
               Rooms
             </Link>
-            {user?.role === 'professional' && session?.sessionId && (canKick || meetingState.active) ? (
+            {canUseMeetings && session?.sessionId && (canKick || meetingState.active) ? (
               <button
                 className="rounded-full bg-brand-primary px-4 py-2 text-[13px] font-medium text-white"
                 onClick={() => {
-                  setMeetingMode(meetingState.active ? 'join' : 'host');
+                  setMeetingMode(canKick ? 'host' : 'join');
                   setMeetingOpen(true);
                 }}
                 type="button"
               >
-                {meetingState.active ? 'Join meeting' : 'Meeting'}
+                {canKick ? (meetingState.active ? 'Open meeting' : 'Meeting') : 'Join meeting'}
               </button>
             ) : null}
             {session?.sessionId && !kicked ? (
-              <Link className="rounded-full border border-border-default bg-white px-4 py-2 text-[13px] font-medium text-text-secondary hover:border-brand-primary hover:text-brand-primary" to={`/anonymous-video?room=${code}`}>
-                Video
-              </Link>
+              canKick ? (
+                <button
+                  className="rounded-full border border-[#f2cec1] bg-white px-4 py-2 text-[13px] font-medium text-[#9a3412] hover:bg-[#fff4ef]"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  type="button"
+                >
+                  Delete room
+                </button>
+              ) : null
             ) : null}
           </div>
         </nav>
@@ -536,6 +562,32 @@ export default function AnonRoomPage() {
             socket={socketInstance}
           />
         </Suspense>
+      ) : null}
+      {deleteConfirmOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-border-default bg-white p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+            <h2 className="font-display text-[22px] font-medium text-text-primary">Delete this room?</h2>
+            <p className="mt-2 text-[14px] leading-[1.6] text-text-secondary">
+              This will delete all room messages, polls, and participants.
+            </p>
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                className="min-h-11 rounded-full border border-border-default px-5 text-[14px] font-medium text-text-secondary"
+                onClick={() => setDeleteConfirmOpen(false)}
+                type="button"
+              >
+                No
+              </button>
+              <button
+                className="min-h-11 rounded-full bg-[#c2410c] px-5 text-[14px] font-medium text-white"
+                onClick={deleteRoom}
+                type="button"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

@@ -59,12 +59,17 @@ const listForUser = async (currentUser) => {
 
 const findStatusById = (id) => statusModel.findById(id).populate('userId', 'name username avatar profileImage');
 
-const addReply = async ({ statusId, userId, text }) =>
-  statusModel.findByIdAndUpdate(
-    statusId,
-    { $push: { replies: { userId, text } } },
-    { new: true }
-  );
+const addReply = async ({ statusId, userId, text }) => {
+  const status = await statusModel.findById(statusId);
+
+  if (!status) {
+    return null;
+  }
+
+  status.replies = [...(status.replies || []), { userId, text, createdAt: new Date().toISOString() }];
+  await status.save();
+  return status;
+};
 
 const react = async ({ statusId, userId, emoji }) => {
   const status = await statusModel.findById(statusId);

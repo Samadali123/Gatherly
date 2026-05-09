@@ -284,6 +284,10 @@ const registerRoomHandlers = (io, socket) => {
     emitToSocket(`anon:${socket.anonUser.roomCode}`, 'room:meeting:state', publicMeeting(null));
   });
 
+  socket.on('room:deleted:ack', () => {
+    socket.disconnect(true);
+  });
+
   socket.on('meeting_ended', async ({ meetingId } = {}) => {
     if (!(await requireRoomParticipant(socket))) {
       return;

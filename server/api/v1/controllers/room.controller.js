@@ -5,7 +5,7 @@ const userService = require('../../../services/userService');
 const cacheService = require('../../../services/cacheService');
 const config = require('../../../configs');
 const { emitToSocket } = require('../../../sockets/emitter');
-const { endMeeting, publicMeeting } = require('../../../sockets/roomMeetingStore');
+const { endMeeting, getMeeting, publicMeeting } = require('../../../sockets/roomMeetingStore');
 const { sendError, sendSuccess } = require('../../../utils/response');
 const { REFRESH_COOKIE_OPTIONS } = require('../../../utils/cookies');
 
@@ -27,7 +27,7 @@ const createRoom = async (req, res, next) => {
     res.cookie('anonSession', session, {
       httpOnly: true,
       sameSite: 'strict',
-      secure: config.NODE_ENV === 'production',
+      secure: config.COOKIE_SECURE,
       signed: true,
       maxAge: REFRESH_COOKIE_OPTIONS.maxAge,
     });
@@ -95,7 +95,7 @@ const joinRoom = async (req, res, next) => {
     res.cookie('anonSession', session, {
       httpOnly: true,
       sameSite: 'strict',
-      secure: config.NODE_ENV === 'production',
+      secure: config.COOKIE_SECURE,
       signed: true,
       maxAge: REFRESH_COOKIE_OPTIONS.maxAge,
     });
@@ -228,6 +228,32 @@ const removeParticipant = async (req, res, next) => {
   }
 };
 
+const deleteRoom = async (req, res, next) => {
+  try {
+    const room = await roomService.findRoomByCode(req.params.code);
+
+    if (!room) {
+      return sendError(res, 'Room not found', 404);
+    }
+
+    if (!room.createdBy || String(room.createdBy) !== String(req.user.userId)) {
+      return sendError(res, 'You do not have permission to perform this action', 403);
+    }
+
+    endMeeting(req.params.code);
+    await roomService.deleteRoom(req.params.code);
+    emitToSocket(`anon:${req.params.code}`, 'room:deleted', {
+      roomCode: req.params.code,
+      message: 'This room was deleted by the host.',
+    });
+    cacheService.delByPrefix('http:user:').catch(() => {});
+
+    return sendSuccess(res, null, 'Room deleted');
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const createMeetingToken = async (req, res, next) => {
   try {
     const room = await roomService.findRoomByCode(req.params.code);
@@ -240,8 +266,21 @@ const createMeetingToken = async (req, res, next) => {
     const user = await userService.findById(req.user.userId);
     const role = user?.role === 'user' ? 'personal' : user?.role;
 
+    const meeting = getMeeting(room.code);
+    const isRoomCreator = room.createdBy && String(room.createdBy) === String(req.user.userId);
+    const isMeetingHost = meeting?.hostSessionId === req.anonUser.sessionId;
+    const isApprovedParticipant = meeting?.approved?.has(req.anonUser.sessionId);
+
     if (role !== 'professional') {
       return sendError(res, 'Professional workspace is required for room meetings', 403);
+    }
+
+    if (meeting && !isRoomCreator && !isMeetingHost && !isApprovedParticipant) {
+      return sendError(res, 'The host has not admitted you to this meeting yet', 403);
+    }
+
+    if (!meeting && !isRoomCreator) {
+      return sendError(res, 'Only the room host can start this meeting', 403);
     }
 
     const livekitRoom = meetingService.getLiveKitRoomName(room.code);
@@ -268,7 +307,9 @@ const endRoomMeeting = async (req, res, next) => {
       return sendError(res, 'You do not have permission to perform this action', 403);
     }
 
-    const meeting = endMeeting(req.params.code, req.anonUser.sessionId);
+    const room = await roomService.findRoomByCode(req.params.code);
+    const isRoomCreator = room?.createdBy && String(room.createdBy) === String(req.user.userId);
+    const meeting = endMeeting(req.params.code, isRoomCreator ? null : req.anonUser.sessionId);
 
     if (!meeting) {
       return sendError(res, 'Meeting not found', 404);
@@ -295,6 +336,7 @@ module.exports = {
   listPolls,
   uploadAttachments,
   removeParticipant,
+  deleteRoom,
   createMeetingToken,
   endRoomMeeting,
 };

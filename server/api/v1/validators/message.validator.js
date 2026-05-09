@@ -3,7 +3,7 @@ const emojiRegex = require('emoji-regex');
 
 const ttlSchema = Joi.string().valid('5m', '1h', '24h', '7d', null).allow(null);
 
-const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+const idPattern = /^[A-Za-z0-9_-]{8,80}$/;
 
 const attachmentSchema = Joi.object({
   type: Joi.string().valid('image', 'video', 'document', 'audio', 'sticker', 'gif').required(),
@@ -28,7 +28,7 @@ const attachmentSchema = Joi.object({
 });
 
 const statusContextSchema = Joi.object({
-  statusId: Joi.string().pattern(objectIdPattern).allow(null),
+  statusId: Joi.string().pattern(idPattern).allow(null),
   type: Joi.string().valid('text', 'image', 'video', null).allow(null),
   text: Joi.string().allow('', null).default(''),
   mediaUrl: Joi.string().uri().allow('', null).default(''),
@@ -38,7 +38,7 @@ const createMessageSchema = Joi.object({
   receiver: Joi.string().trim().required(),
   message: Joi.string().trim().allow('').default(''),
   ttl: ttlSchema.default(null),
-  parentMessageId: Joi.string().pattern(objectIdPattern).allow(null).default(null),
+  parentMessageId: Joi.string().pattern(idPattern).allow(null).default(null),
   attachments: Joi.array().items(attachmentSchema).max(6).default([]),
   statusContext: statusContextSchema.default(null),
 }).custom((value, helpers) => {
@@ -58,11 +58,11 @@ const createMessageSchema = Joi.object({
 });
 
 const pinMessageSchema = Joi.object({
-  id: Joi.string().pattern(objectIdPattern).required(),
+  id: Joi.string().pattern(idPattern).required(),
 });
 
 const getThreadSchema = Joi.object({
-  id: Joi.string().pattern(objectIdPattern).required(),
+  id: Joi.string().pattern(idPattern).required(),
 });
 
 const getPinsSchema = Joi.object({

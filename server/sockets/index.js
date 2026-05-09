@@ -40,19 +40,8 @@ const initializeSockets = (server) => {
 
   io.use(async (socket, next) => {
     const token = socket.handshake.auth && socket.handshake.auth.token;
-    const anonymousVideo = socket.handshake.auth && socket.handshake.auth.anonymousVideo;
-    const anonymousId = socket.handshake.auth && socket.handshake.auth.anonymousId;
     const sessionId = socket.handshake.auth && socket.handshake.auth.sessionId;
     const roomCode = socket.handshake.auth && socket.handshake.auth.roomCode;
-
-    if (anonymousVideo && anonymousId) {
-      socket.authType = 'anonymous-video';
-      socket.videoUser = {
-        anonymousId: String(anonymousId).slice(0, 80),
-        displayName: 'Anonymous',
-      };
-      return next();
-    }
 
     if (sessionId && roomCode) {
       const participant = await roomService.findParticipant({ roomCode, sessionId });
@@ -111,9 +100,6 @@ const initializeSockets = (server) => {
       registerRoomHandlers(io, socket);
     }
 
-    if (socket.authType === 'anonymous-video') {
-      registerVideoHandlers(io, socket);
-    }
   });
 
   return io;

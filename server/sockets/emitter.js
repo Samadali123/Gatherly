@@ -1,6 +1,7 @@
 const userService = require('../services/userService');
 const groupService = require('../services/groupService');
 const { isUserInDnd } = require('../utils/dnd');
+const { getDirectChatParticipants, isDirectChatId } = require('../utils/chat');
 const { getIO } = require('./state');
 
 const emitToSocket = (roomOrSocketId, event, payload) => {
@@ -42,8 +43,8 @@ const emitToChatMembers = async (chatId, event, payload, senderId = null) => {
     return;
   }
 
-  if (chatId.startsWith('dm:')) {
-    const usernames = chatId.split(':').slice(1);
+  if (isDirectChatId(chatId)) {
+    const usernames = getDirectChatParticipants(chatId);
     const users = await Promise.all(usernames.map((username) => userService.findByUsername(username)));
     await Promise.all(
       users

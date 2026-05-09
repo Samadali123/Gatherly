@@ -27,6 +27,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
   const [pollOpen, setPollOpen] = useState(false);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [recording, setRecording] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
   const [stickersOpen, setStickersOpen] = useState(false);
@@ -122,9 +123,11 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
       return;
     }
 
-    setUploading(true);
+    const hasFiles = Boolean(pendingUpload?.files?.length);
+    setSending(true);
+    setUploading(hasFiles);
     try {
-      const attachments = pendingUpload?.files?.length
+      const attachments = hasFiles
         ? await onUploadAttachments?.({
             type: pendingUpload.type,
             files: pendingUpload.files.map((entry) => entry.file),
@@ -135,6 +138,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
       clearPendingUpload();
     } finally {
       setUploading(false);
+      setSending(false);
     }
 
     textareaRef.current.value = '';
@@ -142,7 +146,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
   };
 
   const sendSticker = async (sticker) => {
-    if (disabled || uploading) {
+    if (disabled || uploading || sending) {
       return;
     }
 
@@ -152,7 +156,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
   };
 
   const sendGif = async (gif) => {
-    if (disabled || uploading) {
+    if (disabled || uploading || sending) {
       return;
     }
 
@@ -270,7 +274,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                   className={`group relative flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border-default transition hover:border-brand-primary hover:bg-brand-subtle hover:text-brand-primary ${
                     addonsOpen ? 'border-brand-primary bg-brand-subtle text-brand-primary' : 'text-text-secondary'
                   }`}
-                  disabled={disabled || uploading}
+                  disabled={disabled || uploading || sending}
                   onClick={() => {
                     setAddonsOpen((current) => !current);
                     setStickersOpen(false);
@@ -304,7 +308,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                       />
                       <button
                         className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-text-primary transition hover:bg-brand-subtle"
-                        disabled={disabled || uploading}
+                        disabled={disabled || uploading || sending}
                         onClick={() => fileInputRefs.current[option.type]?.click()}
                         type="button"
                       >
@@ -325,7 +329,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                       className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-brand-subtle ${
                         recording ? 'text-brand-primary' : 'text-text-primary'
                       }`}
-                      disabled={disabled || uploading}
+                      disabled={disabled || uploading || sending}
                       onClick={recording ? stopRecording : startRecording}
                       type="button"
                     >
@@ -364,7 +368,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                 className={`group relative flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border-default transition hover:border-brand-primary hover:bg-brand-subtle hover:text-brand-primary ${
                   stickersOpen ? 'border-brand-primary bg-brand-subtle text-brand-primary' : 'text-text-secondary'
                 }`}
-                disabled={disabled || uploading}
+                disabled={disabled || uploading || sending}
                 onClick={() => {
                   setStickersOpen((current) => !current);
                   setAddonsOpen(false);
@@ -392,7 +396,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
 
             <button
               className="flex min-h-11 items-center gap-2 rounded-full bg-brand-primary px-4 py-2 text-[14px] font-medium text-white transition hover:bg-brand-hover active:scale-95 active:bg-brand-pressed disabled:cursor-not-allowed disabled:bg-border-default disabled:text-text-secondary"
-              disabled={disabled || uploading}
+              disabled={disabled || uploading || sending}
               onClick={submit}
               type="button"
             >

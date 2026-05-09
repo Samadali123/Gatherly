@@ -1,13 +1,15 @@
 const dotenv = require('dotenv');
+const path = require('path');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const env = process.env;
 
 const config = {
   NODE_ENV: env.NODE_ENV || 'development',
   PORT: Number(env.PORT) || 5000,
-  MONGO_URL: env.MONGO_URL || env.MONGODB_URI,
+  DATABASE_URL: env.DATABASE_URL || env.DB_URL,
+  DIRECT_URL: env.DIRECT_URL || '',
   REDIS_URL: env.REDIS_URL || '',
   ACCESS_TOKEN_SECRET: env.ACCESS_TOKEN_SECRET,
   REFRESH_TOKEN_SECRET: env.REFRESH_TOKEN_SECRET,
@@ -25,6 +27,7 @@ const config = {
   SMTP_PASS: env.EMAIL__USER_PASSWORD || env.EMAIL_USER_PASSWORD || env.SMTP_PASS || '',
   SMTP_FROM: env.SMTP_FROM || (env.EMAIL_USER ? `Gatherly <${env.EMAIL_USER}>` : 'Gatherly <no-reply@gatherly.local>'),
   BODY_LIMIT: env.BODY_LIMIT || '1mb',
+  COOKIE_SECURE: env.COOKIE_SECURE ? env.COOKIE_SECURE === 'true' : env.NODE_ENV === 'production',
   CORS_ORIGINS: (env.CORS_ORIGINS || env.CLIENT_URL || 'http://localhost:5173,http://127.0.0.1:5173')
     .split(',')
     .map((origin) => origin.trim())
@@ -33,7 +36,7 @@ const config = {
   TRUST_PROXY: env.TRUST_PROXY || 'loopback',
 };
 
-const requiredVars = ['MONGO_URL', 'ACCESS_TOKEN_SECRET', 'REFRESH_TOKEN_SECRET'];
+const requiredVars = ['DATABASE_URL', 'ACCESS_TOKEN_SECRET', 'REFRESH_TOKEN_SECRET'];
 
 requiredVars.forEach((key) => {
   if (!config[key]) {

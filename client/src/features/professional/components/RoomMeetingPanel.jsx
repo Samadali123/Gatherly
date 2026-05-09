@@ -26,8 +26,11 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   const activeMeeting = {
     hostId: meetingState?.hostSessionId || (mode === 'host' ? session?.sessionId : null),
   };
-  const isHost = Boolean(currentUser.id && activeMeeting.hostId && String(currentUser.id) === String(activeMeeting.hostId));
+  const isHost = mode === 'host' || Boolean(currentUser.id && activeMeeting.hostId && String(currentUser.id) === String(activeMeeting.hostId));
   const meetingId = roomCode;
+  const hostActionText = meetingState?.active ? 'Open meeting' : 'Start meeting';
+  const hostTitleText = meetingState?.active ? 'Open room meeting' : 'Start room meeting';
+  const meetingEndedText = isHost ? 'Meeting ended' : 'The host has ended this meeting';
 
   const fetchMeetingToken = async () => {
     const response = await api.post(`/rooms/${roomCode}/meeting-token`);
@@ -96,9 +99,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
 
   const handleLiveKitDisconnected = () => {
     if (meetingJoinedRef.current) {
-      if (isHost) {
-        socket?.emit('meeting_ended', { meetingId });
-      } else {
+      if (!isHost) {
         socket?.emit('participant_left', {
           displayName: session?.alias || 'Participant',
           meetingId,
@@ -155,7 +156,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       setMeeting(null);
       setUserChoices(null);
       setWaiting(false);
-      setError('The host ended this meeting.');
+      setError(isHost ? 'Meeting ended.' : 'The host ended this meeting.');
     };
     const handleWhiteboardOpened = () => {
       if (isHost) return;
@@ -244,7 +245,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
               <div className="w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-white p-4 shadow-[0_18px_70px_rgba(0,0,0,0.28)] sm:p-5">
                 <div className="mb-4">
                   <p className="text-[12px] font-medium uppercase tracking-[0.22em] text-text-secondary">Device check</p>
-                  <h3 className="font-display text-[24px] font-medium text-text-primary">Join room meeting</h3>
+                  <h3 className="font-display text-[24px] font-medium text-text-primary">{isHost ? hostTitleText : 'Join room meeting'}</h3>
                 </div>
                 <PreJoin
                   camLabel="Camera"
@@ -253,7 +254,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                     audioEnabled: true,
                     videoEnabled: true,
                   }}
-                  joinLabel="Join meeting"
+                  joinLabel={isHost ? hostActionText : 'Join meeting'}
                   micLabel="Microphone"
                   onError={(nextError) => setError(nextError.message || 'Unable to access camera or microphone.')}
                   onSubmit={(choices) => setUserChoices(choices)}
@@ -337,7 +338,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-subtle text-brand-primary">
                   <Video size={24} strokeWidth={1.7} />
                 </div>
-                <h3 className="mt-4 font-display text-[26px] font-medium text-text-primary">{isHost ? 'Start room meeting' : 'Join room meeting'}</h3>
+                <h3 className="mt-4 font-display text-[26px] font-medium text-text-primary">{isHost ? hostTitleText : 'Join room meeting'}</h3>
                 <p className="mt-2 text-[14px] leading-[1.6] text-text-secondary">
                   {isHost ? 'Start the LiveKit call and admit people from the waiting room.' : 'Ask the host to admit you before joining the LiveKit room.'}
                 </p>
@@ -354,7 +355,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                   type="button"
                 >
                   {loading ? <Spinner size="sm" /> : <Video size={16} strokeWidth={1.7} />}
-                  {waiting ? 'Waiting for host' : isHost ? 'Start meeting' : 'Request to join'}
+                  {waiting ? 'Waiting for host' : isHost ? hostActionText : 'Request to join'}
                 </button>
               </div>
               <div className="rounded-xl border border-white/10 bg-white p-5">
@@ -404,7 +405,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       ) : null}
       {meetingEndedOverlay ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
-          <p className="text-center font-display text-[24px] font-medium text-white sm:text-[30px]">The host has ended this meeting</p>
+          <p className="text-center font-display text-[24px] font-medium text-white sm:text-[30px]">{meetingEndedText}</p>
         </div>
       ) : null}
       {isHost && leaveToasts.length ? (

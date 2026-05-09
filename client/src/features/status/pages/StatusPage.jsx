@@ -121,8 +121,8 @@ export default function StatusPage() {
   };
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-4 px-3 py-4 sm:gap-6 sm:px-6 sm:py-8 xl:grid-cols-[360px_minmax(0,1fr)]">
-      <section className="rounded-xl border border-border-default bg-bg-primary p-4 shadow-card sm:p-5">
+    <div className="mx-auto grid w-full max-w-6xl gap-4 overflow-hidden px-3 py-4 sm:gap-6 sm:px-6 sm:py-8 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <section className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-bg-primary p-3 shadow-card min-[380px]:p-4 sm:p-5">
           <p className="text-[12px] font-medium uppercase tracking-[0.24em] text-text-secondary">Status studio</p>
           <h2 className="mt-2 font-display text-[26px] font-medium text-text-primary">Add to my status</h2>
 
@@ -161,20 +161,21 @@ export default function StatusPage() {
           </button>
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-xl border border-border-default">
+        <div className="mt-3 w-full max-w-full overflow-hidden rounded-xl border border-border-default">
           {draft.type === 'image' && draft.mediaUrl ? <img alt="Status preview" className="h-[min(62vh,420px)] min-h-[300px] w-full object-cover" src={draft.mediaUrl} /> : null}
           {draft.type === 'video' && draft.mediaUrl ? <video className="h-[min(62vh,420px)] min-h-[300px] w-full bg-brand-primary object-contain" controls src={draft.mediaUrl} /> : null}
           {draft.type === 'text' ? (
             <div
-              className="flex h-[min(62vh,420px)] min-h-[300px] items-center justify-center p-5 text-center sm:p-6"
+              className="flex h-[min(58vh,420px)] min-h-[240px] w-full max-w-full items-center justify-center overflow-y-auto whitespace-pre-wrap break-words p-4 text-center leading-tight min-[380px]:min-h-[280px] sm:p-6"
               style={{
                 background: draft.style.background,
                 color: draft.style.color,
-                fontSize: draft.style.fontSize,
+                fontSize: `clamp(20px, 8vw, ${draft.style.fontSize}px)`,
                 fontWeight: draft.style.bold ? 700 : 500,
                 fontStyle: draft.style.italic ? 'italic' : 'normal',
                 fontFamily: draft.style.fontFamily || fontOptions[0].value,
                 textAlign: draft.style.align,
+                overflowWrap: 'anywhere',
               }}
             >
               {draft.text || 'Write your status'}
@@ -195,10 +196,10 @@ export default function StatusPage() {
 
         {composerMode === 'text' ? (
         <div className="mt-3 space-y-3">
-          <div className="relative flex flex-wrap items-center gap-4" ref={colorPickerRef}>
+          <div className="relative grid grid-cols-1 gap-3 min-[390px]:grid-cols-2" ref={colorPickerRef}>
             <button
               aria-label="Choose status background color"
-              className="inline-flex items-center gap-3 text-left"
+              className="inline-flex min-w-0 items-center gap-3 text-left"
               onClick={() => setActiveColorPicker((current) => (current === 'background' ? null : 'background'))}
               type="button"
             >
@@ -214,7 +215,7 @@ export default function StatusPage() {
 
             <button
               aria-label="Choose status text color"
-              className="inline-flex items-center gap-3 text-left"
+              className="inline-flex min-w-0 items-center gap-3 text-left"
               onClick={() => setActiveColorPicker((current) => (current === 'text' ? null : 'text'))}
               type="button"
             >
@@ -231,7 +232,7 @@ export default function StatusPage() {
             </button>
 
             {activeColorPicker ? (
-              <div className="absolute left-0 top-12 z-20 rounded-xl border border-border-default bg-bg-primary p-3 shadow-[0_18px_48px_rgba(36,81,67,0.18)]">
+              <div className="absolute left-0 top-14 z-20 max-w-[calc(100vw-2rem)] rounded-xl border border-border-default bg-bg-primary p-3 shadow-[0_18px_48px_rgba(36,81,67,0.18)]">
                 <HexColorPicker
                   color={activeColorPicker === 'background' ? draft.style.background || '#FFFFFF' : draft.style.color || '#FFFFFF'}
                   onChange={(color) => setDraft((current) => ({
@@ -255,7 +256,7 @@ export default function StatusPage() {
             ) : null}
           </div>
 
-          <div className="scrollbar-chat flex gap-2 overflow-x-auto pb-1">
+          <div className="scrollbar-chat flex max-w-full gap-2 overflow-x-auto pb-1">
             {fontOptions.map((font) => {
               const selected = (draft.style.fontFamily || fontOptions[0].value) === font.value;
               return (
@@ -290,7 +291,7 @@ export default function StatusPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-border-default bg-bg-primary p-4 shadow-card sm:p-5">
+      <section className="min-w-0 rounded-xl border border-border-default bg-bg-primary p-4 shadow-card sm:p-5">
         <p className="text-[12px] font-medium uppercase tracking-[0.24em] text-text-secondary">Recent updates</p>
         <div className="mt-4 space-y-3">
           {updateGroups.map((group) => (

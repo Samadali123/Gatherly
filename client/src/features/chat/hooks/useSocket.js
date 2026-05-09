@@ -63,6 +63,24 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
     const handleReceiveMessage = (payload) => {
       const message = payload.message || payload;
       const receiverKey = message.chatId || currentConversationKey || message.receiver;
+      const senderUser = payload.senderUser;
+
+      if (senderUser && senderUser.id !== currentUser?.id) {
+        upsertContact({
+          userId: senderUser.id,
+          name: senderUser.name,
+          displayName: senderUser.name || senderUser.username || senderUser.email,
+          target: senderUser.username || senderUser.email,
+          username: senderUser.username || senderUser.email,
+          email: senderUser.email,
+          avatar: senderUser.avatar,
+          profileImage: senderUser.profileImage || senderUser.avatar,
+          chatId: message.chatId,
+          online: true,
+          type: 'dm',
+        });
+      }
+
       appendMessage(receiverKey, message);
       touchContactLastMessage({ currentUser, message });
 

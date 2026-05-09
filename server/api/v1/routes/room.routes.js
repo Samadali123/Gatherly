@@ -32,5 +32,6 @@ router.post('/:code/meeting-token', authenticate, anonSession, roomController.cr
 router.delete('/:code/meeting', authenticate, anonSession, roomController.endRoomMeeting);
 router.get('/:code/polls', anonSession, roomController.listPolls);
 router.delete('/:code/participants/:sessionId', authenticate, roomController.removeParticipant);
+router.delete('/:code', authenticate, roomController.deleteRoom);
 
 module.exports = router;

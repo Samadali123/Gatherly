@@ -24,6 +24,14 @@ const registerChatHandlers = (io, socket) => {
         messageId: message._id,
         chatId: message.chatId,
         message,
+        senderUser: {
+          id: currentUser._id,
+          name: currentUser.name,
+          username: currentUser.username || currentUser.email,
+          email: currentUser.email,
+          avatar: currentUser.avatar,
+          profileImage: currentUser.profileImage,
+        },
       };
 
       await emitToUser(chatMeta.receiverUser._id, 'receive-private-message', payload, currentUser._id);

@@ -1,12 +1,4 @@
 services:
-  mongo:
-    image: mongo:7
-    restart: unless-stopped
-    volumes:
-      - mongo-data:/data/db
-    ports:
-      - "27017:27017"
-
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -21,19 +13,18 @@ services:
       context: ./server
     restart: unless-stopped
     depends_on:
-      - mongo
       - redis
+    env_file:
+      - ./server/.env
     environment:
       NODE_ENV: production
       PORT: 5000
-      MONGO_URL: mongodb://mongo:27017/gatherly
       REDIS_URL: redis://redis:6379
       CLIENT_URL: http://localhost:8080
       CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+      APP_DOMAIN: http://localhost:8080
       TRUST_PROXY: 1
-      ACCESS_TOKEN_SECRET: de2e6f1455df6051ad9e99d449dbaf627ac459a270825ba4b26a01143cfca61
-      REFRESH_TOKEN_SECRET: fb906f46cc629002c3799d8d00ff1172713a7a32f7f96c04528bc94aad5f1e0a
-      COOKIE_SECRET: b927f769deb9f1c3775473cb02e83cf22a1ed7d4c8373147db09c7462a345e05
+      COOKIE_SECURE: false
     ports:
       - "5000:5000"
 
@@ -47,5 +38,4 @@ services:
       - "8080:80"
 
 volumes:
-  mongo-data:
   redis-data:

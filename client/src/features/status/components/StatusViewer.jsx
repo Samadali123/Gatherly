@@ -14,6 +14,7 @@ export default function StatusViewer({ canReply = false, groups = null, onClose,
   const canReplyActive = activeGroup?.canReply ?? canReply;
   const status = activeStatuses[index];
   const progress = useMemo(() => `${index + 1} / ${activeStatuses.length}`, [index, activeStatuses.length]);
+  const hasNextStatus = index < activeStatuses.length - 1 || groupIndex < storyGroups.length - 1;
 
   const pauseTemporarily = () => {
     setIsPaused(true);
@@ -56,12 +57,10 @@ export default function StatusViewer({ canReply = false, groups = null, onClose,
   };
 
   useEffect(() => {
-    if (!status || activeStatuses.length <= 1 || isPaused) return undefined;
-    const timerId = window.setInterval(() => {
-      setIndex((current) => (current + 1) % activeStatuses.length);
-    }, 4000);
-    return () => window.clearInterval(timerId);
-  }, [activeStatuses.length, isPaused, status?._id]);
+    if (!status || !hasNextStatus || isPaused) return undefined;
+    const timerId = window.setTimeout(() => goNext({ pause: false }), 60000);
+    return () => window.clearTimeout(timerId);
+  }, [groupIndex, hasNextStatus, index, isPaused, status?._id]);
 
   useEffect(() => {
     return () => {
@@ -83,7 +82,7 @@ export default function StatusViewer({ canReply = false, groups = null, onClose,
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[rgba(36,81,67,0.92)] px-4 py-6">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[rgba(36,81,67,0.92)] px-2 py-3 sm:px-4 sm:py-6">
       <div
         className="relative flex h-full max-h-[860px] w-full max-w-[460px] flex-col overflow-hidden rounded-xl border border-white/20 bg-[#102E26] shadow-[0_20px_80px_rgba(36,81,67,0.35)]"
         onMouseEnter={() => setIsPaused(true)}
@@ -111,16 +110,17 @@ export default function StatusViewer({ canReply = false, groups = null, onClose,
           {status.type === 'video' ? <video autoPlay className="status-fade-in h-full w-full object-contain" controls key={status._id} src={status.mediaUrl} /> : null}
           {status.type === 'text' ? (
             <div
-              className="status-fade-in flex h-full w-full items-center justify-center px-8 text-center"
+              className="status-fade-in flex h-full w-full items-center justify-center overflow-y-auto whitespace-pre-wrap break-words px-5 py-24 text-center leading-tight sm:px-8"
               key={status._id}
               style={{
                 background: status.style?.background || '#245143',
                 color: status.style?.color || '#FFFFFF',
-                fontSize: status.style?.fontSize || 28,
+                fontSize: `clamp(20px, 8vw, ${status.style?.fontSize || 28}px)`,
                 fontWeight: status.style?.bold ? 700 : 500,
                 fontStyle: status.style?.italic ? 'italic' : 'normal',
                 fontFamily: status.style?.fontFamily || '"DM Sans", system-ui, sans-serif',
                 textAlign: status.style?.align || 'center',
+                overflowWrap: 'anywhere',
               }}
             >
               {status.text}

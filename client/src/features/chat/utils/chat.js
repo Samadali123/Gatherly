@@ -1,4 +1,4 @@
-export const buildDirectChatId = (left, right) => ['dm', left, right].sort().join(':');
+export const buildDirectChatId = (left, right) => `dm:${[left, right].sort().join(':')}`;
 
 export const getConversationChatId = (conversation, currentUser) => {
   if (!conversation) {

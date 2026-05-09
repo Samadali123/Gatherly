@@ -1,5 +1,4 @@
 const chatService = require('../../../services/chatService');
-const mongoose = require('mongoose');
 const reactionService = require('../../../services/reactionService');
 const uploadService = require('../../../services/uploadService');
 const userService = require('../../../services/userService');
@@ -28,6 +27,14 @@ const createMessage = async (req, res, next) => {
       messageId: message._id,
       chatId: message.chatId,
       message,
+      senderUser: {
+        id: senderUser._id,
+        name: senderUser.name,
+        username: senderUser.username || senderUser.email,
+        email: senderUser.email,
+        avatar: senderUser.avatar,
+        profileImage: senderUser.profileImage,
+      },
     };
 
     if (chatMeta.receiverUser) {
@@ -64,9 +71,11 @@ const uploadAttachments = async (req, res, next) => {
 const isMessageOwner = (message, user) =>
   Boolean(user && [user.username, user.email].filter(Boolean).includes(message.sender));
 
+const hasMessageId = (id) => typeof id === 'string' && id.trim().length >= 8;
+
 const pinMessage = async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!hasMessageId(req.params.id)) {
       return sendError(res, 'Message not ready yet. Please try again.', 400);
     }
 
@@ -78,10 +87,6 @@ const pinMessage = async (req, res, next) => {
     }
 
     if (!(await chatService.userCanAccessMessage(user, message))) {
-      return sendError(res, 'You do not have permission to perform this action', 403);
-    }
-
-    if (!isMessageOwner(message, user)) {
       return sendError(res, 'You do not have permission to perform this action', 403);
     }
 
@@ -101,7 +106,7 @@ const pinMessage = async (req, res, next) => {
 
 const unpinMessage = async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!hasMessageId(req.params.id)) {
       return sendError(res, 'Message not ready yet. Please try again.', 400);
     }
 
@@ -131,7 +136,7 @@ const unpinMessage = async (req, res, next) => {
 
 const getThread = async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!hasMessageId(req.params.id)) {
       return sendError(res, 'Message not ready yet. Please try again.', 400);
     }
 
@@ -155,7 +160,7 @@ const getThread = async (req, res, next) => {
 
 const addReaction = async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!hasMessageId(req.params.id)) {
       return sendError(res, 'Message not ready yet. Please try again.', 400);
     }
 
@@ -170,10 +175,6 @@ const addReaction = async (req, res, next) => {
     }
 
     const user = await userService.findById(req.user.userId);
-
-    if (!user || message.sender === user.username) {
-      return sendError(res, 'You cannot react to your own message', 403);
-    }
 
     const { reaction, count, previousEmoji, previousCount } = await reactionService.addReaction({
       messageId: message._id,
@@ -209,7 +210,7 @@ const addReaction = async (req, res, next) => {
 
 const removeReaction = async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!hasMessageId(req.params.id)) {
       return sendError(res, 'Message not ready yet. Please try again.', 400);
     }
 
@@ -240,7 +241,7 @@ const removeReaction = async (req, res, next) => {
 
 const deleteMessage = async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!hasMessageId(req.params.id)) {
       return sendError(res, 'Message not ready yet. Please try again.', 400);
     }
 

@@ -179,12 +179,6 @@ const createAnonMessage = async ({ room, participant, content, parentMessageId =
       throw error;
     }
 
-    if (parent.sessionId !== participant.sessionId) {
-      const error = new Error('You cannot reply to this message');
-      error.statusCode = 403;
-      throw error;
-    }
-
     replyTo = buildReplyToPreview({
       message: parent,
       senderId: parent.sessionId,
@@ -219,12 +213,6 @@ const pinAnonMessage = async ({ roomCode, messageId, sessionId }) => {
     return null;
   }
 
-  if (message.sessionId !== sessionId) {
-    const error = new Error('You do not have permission to perform this action');
-    error.statusCode = 403;
-    throw error;
-  }
-
   message.isPinned = true;
   message.pinnedBySessionId = sessionId;
   await message.save();
@@ -255,12 +243,6 @@ const reactToAnonMessage = async ({ roomCode, messageId, sessionId, emoji }) => 
 
   if (!message) {
     return null;
-  }
-
-  if (message.sessionId === sessionId) {
-    const error = new Error('You cannot react to your own message');
-    error.statusCode = 403;
-    throw error;
   }
 
   message.reactions = (message.reactions || []).filter((reaction) => reaction.sessionId !== sessionId);
@@ -337,6 +319,16 @@ const listExpiredRooms = (now) => anonRoomModel.find({ isActive: true, expiresAt
 
 const deactivateRooms = (roomIds) => anonRoomModel.updateMany({ _id: { $in: roomIds } }, { isActive: false });
 
+const deleteRoom = async (code) => {
+  await Promise.all([
+    anonMessageModel.deleteMany({ roomCode: code }),
+    anonPollModel.deleteMany({ roomCode: code }),
+    anonParticipantModel.deleteMany({ roomCode: code }),
+  ]);
+
+  return anonRoomModel.findOneAndDelete({ code });
+};
+
 module.exports = {
   createRoom,
   searchActiveRooms,
@@ -360,4 +352,5 @@ module.exports = {
   getAnonSession,
   listExpiredRooms,
   deactivateRooms,
+  deleteRoom,
 };

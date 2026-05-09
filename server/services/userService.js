@@ -34,7 +34,7 @@ const isUsernameAvailable = async ({ username, userId }) => {
 const listOnlineUsers = () =>
   userModel.find({
     socketId: {
-      $nin: [''],
+      $ne: '',
     },
   });
 
@@ -60,7 +60,12 @@ const clearSocketById = (socketId) =>
   userModel.findOneAndUpdate({ socketId }, { socketId: '' }, { new: true });
 
 const clearAllSocketIds = async () => {
-  await userModel.updateMany({}, { $set: { socketId: '' } });
+  try {
+    const onlineUsers = await listOnlineUsers();
+    await Promise.allSettled(onlineUsers.map((user) => updateSocketId(user._id, '')));
+  } catch {
+    // Presence cleanup is best-effort; a stale socket id should not block app startup.
+  }
 };
 
 const updateDndSettings = (userId, payload) =>
