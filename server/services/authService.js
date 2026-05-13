@@ -8,9 +8,11 @@ const emailService = require('./emailService');
 const generateTokens = require('../utils/generateTokens');
 const { hashToken } = require('../utils/token');
 const { isUserInDnd } = require('../utils/dnd');
+const { looksLikePhone, normalizePhone } = require('../utils/phone');
 
 const BCRYPT_ROUNDS = 12;
 const PASSWORD_RESET_TTL_MS = 5 * 60 * 1000;
+const emailPattern = /^\S+@\S+\.\S+$/;
 
 const toAuthUser = (user) => ({
   id: user._id,
@@ -18,6 +20,7 @@ const toAuthUser = (user) => ({
   email: user.email,
   username: user.username,
   bio: user.bio || '',
+  profileNote: user.profileNote || '',
   phone: user.phone || '',
   number: user.number,
   avatar: user.avatar || user.profileImage,
@@ -30,7 +33,22 @@ const toAuthUser = (user) => ({
   lastLoginAt: user.lastLoginAt,
 });
 
-const buildUsername = (email) => email.toLowerCase();
+const buildUsername = async ({ email, phone, name }) => {
+  const source = email || phone || name || `user-${crypto.randomBytes(3).toString('hex')}`;
+  const base = String(source)
+    .toLowerCase()
+    .split('@')[0]
+    .replace(/[^a-z0-9_]/g, '')
+    .slice(0, 24) || `user${crypto.randomBytes(3).toString('hex')}`;
+
+  let username = base;
+  let suffix = 0;
+  while (await userModel.findOne({ username })) {
+    suffix += 1;
+    username = `${base.slice(0, 24)}${suffix}`;
+  }
+  return username;
+};
 
 const getUserType = (user) => (user.role === 'professional' ? 'professional' : 'personal');
 
@@ -77,11 +95,31 @@ const buildResetEmail = ({ name, resetUrl }) => {
   return { text, html };
 };
 
-const register = async ({ name, email, password, role = 'personal' }) => {
-  const existingUser = await userModel.findOne({ email });
+const register = async ({ name, email, phone, emailOrPhone, password, role = 'personal' }) => {
+  const identifier = String(emailOrPhone || email || phone || '').trim();
+  const nextEmail = (email || (!looksLikePhone(identifier) ? identifier : '')).trim().toLowerCase();
+  const nextPhone = normalizePhone(phone || (looksLikePhone(identifier) ? identifier : ''));
 
-  if (existingUser) {
+  if (!nextEmail && !nextPhone) {
+    const error = new Error('Enter an email address or mobile number');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (nextEmail && !emailPattern.test(nextEmail)) {
+    const error = new Error('Enter a valid email address or mobile number');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (nextEmail && (await userModel.findOne({ email: nextEmail }))) {
     const error = new Error('Email already registered');
+    error.statusCode = 409;
+    throw error;
+  }
+
+  if (nextPhone && (await userModel.findOne({ phone: nextPhone }))) {
+    const error = new Error('Mobile number already registered');
     error.statusCode = 409;
     throw error;
   }
@@ -90,10 +128,12 @@ const register = async ({ name, email, password, role = 'personal' }) => {
 
   const user = await userModel.create({
     name,
-    email,
-    username: buildUsername(email),
+    email: nextEmail || null,
+    phone: nextPhone || null,
+    username: await buildUsername({ email: nextEmail, phone: nextPhone, name }),
     password: passwordHash,
     role,
+    authProvider: 'password',
     passwordChangedAt: new Date(),
   });
 
@@ -109,12 +149,18 @@ const register = async ({ name, email, password, role = 'personal' }) => {
   };
 };
 
-const login = async ({ email, password, role = 'personal' }) => {
-  const user = await userModel.findOne({ email });
+const login = async ({ email, identifier, emailOrPhone, password, role = 'personal' }) => {
+  const user = await userServiceFindByIdentifier(identifier || emailOrPhone || email);
 
   if (!user) {
     const error = new Error('Invalid credentials');
     error.statusCode = 401;
+    throw error;
+  }
+
+  if (!user.password) {
+    const error = new Error('Use Google login for this account');
+    error.statusCode = 403;
     throw error;
   }
 
@@ -143,6 +189,83 @@ const login = async ({ email, password, role = 'personal' }) => {
     refreshToken,
     user,
   };
+};
+
+const userServiceFindByIdentifier = async (identifier) => {
+  const value = String(identifier || '').trim();
+  if (!value) return null;
+  if (value.includes('@')) return userModel.findOne({ email: value.toLowerCase() });
+  const phone = normalizePhone(value);
+  if (phone) {
+    const byPhone = await userModel.findOne({ phone });
+    if (byPhone) return byPhone;
+  }
+  return userModel.findOne({ username: value.toLowerCase() });
+};
+
+const verifyGoogleCredential = async (credential) => {
+  if (!config.GOOGLE_CLIENT_ID) {
+    const error = new Error('Google login is not configured');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+  if (!response.ok) {
+    const error = new Error('Google login failed. Please try again.');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const profile = await response.json();
+  if (profile.aud !== config.GOOGLE_CLIENT_ID || profile.email_verified !== 'true') {
+    const error = new Error('Google account could not be verified');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  return profile;
+};
+
+const loginWithGoogle = async ({ credential, role = 'personal' }) => {
+  const profile = await verifyGoogleCredential(credential);
+  let user = await userModel.findOne({ googleId: profile.sub });
+
+  if (!user && profile.email) {
+    user = await userModel.findOne({ email: profile.email.toLowerCase() });
+  }
+
+  if (!user) {
+    user = await userModel.create({
+      name: profile.name || profile.email,
+      email: profile.email.toLowerCase(),
+      username: await buildUsername({ email: profile.email, name: profile.name }),
+      password: null,
+      role,
+      authProvider: 'google',
+      googleId: profile.sub,
+      profileImage: profile.picture || undefined,
+      avatar: profile.picture || undefined,
+      passwordChangedAt: null,
+    });
+  } else {
+    user.googleId = user.googleId || profile.sub;
+    user.authProvider = user.authProvider === 'password' ? 'password,google' : 'google';
+    if (['personal', 'professional'].includes(role) && user.role !== role) {
+      user.role = role;
+    }
+    if (profile.picture && !user.avatar) {
+      user.avatar = profile.picture;
+      user.profileImage = profile.picture;
+    }
+  }
+
+  const { accessToken, refreshToken } = generateTokens(user);
+  user.refreshTokenHash = hashToken(refreshToken);
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  return { accessToken, refreshToken, user };
 };
 
 const refresh = async (refreshToken) => {
@@ -343,6 +466,7 @@ module.exports = {
   toAuthUser,
   register,
   login,
+  loginWithGoogle,
   refresh,
   requestPasswordReset,
   validatePasswordResetToken,

@@ -1,5 +1,6 @@
 const userModel = require('../models/user.model');
 const { isUserInDnd } = require('../utils/dnd');
+const { normalizePhone } = require('../utils/phone');
 
 const sanitizeUser = (user) => ({
   id: user._id,
@@ -9,6 +10,7 @@ const sanitizeUser = (user) => ({
   number: user.number,
   phone: user.phone || '',
   bio: user.bio || '',
+  profileNote: user.profileNote || '',
   avatar: user.avatar || user.profileImage,
   profileImage: user.profileImage,
   socketId: user.socketId,
@@ -22,9 +24,25 @@ const sanitizeUser = (user) => ({
 
 const findById = (userId) => userModel.findById(userId);
 
-const findByEmail = (email) => userModel.findOne({ email: email.toLowerCase() });
+const findByEmail = (email) => (email ? userModel.findOne({ email: email.toLowerCase() }) : null);
 
-const findByUsername = (username) => userModel.findOne({ username: username.toLowerCase() });
+const findByUsername = (username) => (username ? userModel.findOne({ username: username.toLowerCase() }) : null);
+
+const findByPhone = (phone) => userModel.findOne({ phone: normalizePhone(phone) });
+
+const findByGoogleId = (googleId) => userModel.findOne({ googleId });
+
+const findByIdentifier = async (identifier) => {
+  const value = String(identifier || '').trim();
+  if (!value) return null;
+  if (value.includes('@')) return findByEmail(value);
+  const normalizedPhone = normalizePhone(value);
+  if (normalizedPhone) {
+    const byPhone = await findByPhone(normalizedPhone);
+    if (byPhone) return byPhone;
+  }
+  return findByUsername(value.toLowerCase());
+};
 
 const isUsernameAvailable = async ({ username, userId }) => {
   const existing = await userModel.findOne({ username: username.toLowerCase(), _id: { $ne: userId } });
@@ -50,7 +68,7 @@ const listChatUsers = (excludeUserId, role = null) =>
       _id: { $ne: excludeUserId },
       ...(role ? { role: roleFilter(role) } : {}),
     })
-    .select('name email username avatar profileImage socketId')
+    .select('name email username phone avatar profileImage socketId profileNote bio')
     .sort({ name: 1 });
 
 const updateSocketId = (userId, socketId) =>
@@ -80,7 +98,14 @@ const updateDndSettings = (userId, payload) =>
   );
 
 const updateProfile = (userId, payload) =>
-  userModel.findByIdAndUpdate(userId, payload, { new: true, runValidators: true });
+  userModel.findByIdAndUpdate(
+    userId,
+    {
+      ...payload,
+      ...(payload.phone !== undefined ? { phone: normalizePhone(payload.phone) || null } : {}),
+    },
+    { new: true, runValidators: true }
+  );
 
 const updateAvatar = (userId, avatarUrl) =>
   userModel.findByIdAndUpdate(
@@ -101,6 +126,7 @@ const searchUsers = async (query, excludeUserId, role = null) =>
         { name: { $regex: query, $options: 'i' } },
         { email: { $regex: query, $options: 'i' } },
         { username: { $regex: query, $options: 'i' } },
+        { phone: { $regex: normalizePhone(query) || query, $options: 'i' } },
       ],
     })
     .limit(10);
@@ -110,7 +136,10 @@ module.exports = {
   normalizeRole,
   findById,
   findByEmail,
+  findByGoogleId,
+  findByIdentifier,
   findByUsername,
+  findByPhone,
   isUsernameAvailable,
   listOnlineUsers,
   listChatUsers,

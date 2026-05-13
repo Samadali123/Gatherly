@@ -1,15 +1,17 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import RegisterForm from '../components/RegisterForm';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 import { useAuth } from '../hooks/useAuth';
 import { useUiStore } from '../../chat/chatStore';
 import { getFriendlyErrorMessage } from '../../../shared/utils/errorMessage';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { register, loading } = useAuth();
+  const { register, loginWithGoogle, loading } = useAuth();
   const { pushToast } = useUiStore();
   const [error, setError] = useState('');
+  const [selectedRole, setSelectedRole] = useState('personal');
 
   const onSubmit = async (payload) => {
     try {
@@ -23,6 +25,18 @@ export default function RegisterPage() {
     }
   };
 
+  const onGoogle = async (credential) => {
+    try {
+      setError('');
+      const auth = await loginWithGoogle(credential, selectedRole);
+      navigate(auth.user?.role === 'professional' ? '/rooms/new' : '/chat');
+    } catch (error) {
+      const message = getFriendlyErrorMessage(error, 'Unable to continue with Google.');
+      setError(message);
+      pushToast(message, 'error', 'Google signup failed');
+    }
+  };
+
   return (
     <div>
       <p className="text-[12px] font-medium uppercase tracking-[0.3em] text-text-secondary">Gatherly</p>
@@ -32,7 +46,10 @@ export default function RegisterPage() {
       </p>
 
       <div className="mt-6">
-        <RegisterForm error={error} loading={loading} onSubmit={onSubmit} />
+        <RegisterForm error={error} loading={loading} onRoleChange={setSelectedRole} onSubmit={onSubmit} />
+      </div>
+      <div className="mt-4">
+        <GoogleAuthButton disabled={loading} onCredential={onGoogle} />
       </div>
 
       <p className="mt-6 text-[14px] leading-[1.6] text-text-secondary">

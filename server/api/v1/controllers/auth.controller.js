@@ -1,5 +1,6 @@
 const authService = require('../../../services/authService');
 const userService = require('../../../services/userService');
+const config = require('../../../configs');
 const { sendError, sendSuccess } = require('../../../utils/response');
 
 const register = async (req, res, next) => {
@@ -38,6 +39,27 @@ const login = async (req, res, next) => {
     return next(error);
   }
 };
+
+const google = async (req, res, next) => {
+  try {
+    const { accessToken, refreshToken, user } = await authService.loginWithGoogle(req.body);
+
+    return sendSuccess(
+      res,
+      {
+        accessToken,
+        refreshToken,
+        user: authService.toAuthUser(user),
+      },
+      'Google login successful'
+    );
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const googleConfig = (req, res) =>
+  sendSuccess(res, { clientId: config.GOOGLE_CLIENT_ID || '' }, 'Google config fetched');
 
 const refresh = async (req, res, next) => {
   try {
@@ -113,6 +135,8 @@ const me = async (req, res, next) => {
 module.exports = {
   register,
   login,
+  google,
+  googleConfig,
   refresh,
   forgotPassword,
   validateResetToken,

@@ -13,6 +13,35 @@ const friendlyByMessage = {
   'Refresh token missing': 'Please sign in to continue.',
   'Invalid or missing token': 'Please sign in to continue.',
   'Validation failed': 'Please check the highlighted details and try again.',
+  'Room expired': 'This room has ended.',
+  'Resource not found': 'We could not find what you are looking for.',
+};
+
+const technicalPatterns = [
+  /prisma/i,
+  /database/i,
+  /public\./i,
+  /does not exist/i,
+  /invocation/i,
+  /sql/i,
+  /postgres/i,
+  /constraint/i,
+  /schema/i,
+  /stack/i,
+  /aggregateerror/i,
+  /econnrefused|etimedout|eacces|enotfound/i,
+];
+
+const friendlyForTechnicalMessage = (message = '') => {
+  if (!technicalPatterns.some((pattern) => pattern.test(message))) {
+    return '';
+  }
+
+  if (/users.*does not exist|table.*does not exist|database is not ready/i.test(message)) {
+    return 'The app database is not ready yet. Please try again after setup is complete.';
+  }
+
+  return 'Something went wrong on our side. Please try again in a moment.';
 };
 
 const normalizeValidationMessage = (field, message = '') => {
@@ -58,5 +87,5 @@ export const getFriendlyErrorMessage = (error, fallback = 'Something went wrong.
   }
 
   const message = response?.message || error?.message;
-  return friendlyByMessage[message] || message || fallback;
+  return friendlyByMessage[message] || friendlyForTechnicalMessage(message) || message || fallback;
 };

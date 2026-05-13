@@ -10,6 +10,11 @@ const router = express.Router();
 
 router.get('/search', authenticate, cacheResponse({ ttlSeconds: 10 }), userController.search);
 router.get('/check-username', authenticate, cacheResponse({ ttlSeconds: 20 }), userController.checkUsername);
+router.get('/:id', authenticate, userController.getProfile);
+router.post('/:id/follow', authenticate, userController.follow);
+router.delete('/:id/follow', authenticate, userController.unfollow);
+router.post('/:id/block', authenticate, userController.block);
+router.delete('/:id/block', authenticate, userController.unblock);
 router.patch('/profile', authenticate, validate(profileSchema), userController.updateProfile);
 router.post('/avatar', authenticate, upload.single('avatar'), userController.updateAvatar);
 router.patch('/me/dnd', authenticate, validate(dndSchema), userController.updateDnd);

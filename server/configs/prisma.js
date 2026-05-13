@@ -5,8 +5,10 @@ const path = require('path');
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
+const normalizeDatabaseUrl = (value = '') => value.replace(/\s+/g, '').trim();
+
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: normalizeDatabaseUrl(process.env.DATABASE_URL),
 });
 
 const prisma = new PrismaClient({

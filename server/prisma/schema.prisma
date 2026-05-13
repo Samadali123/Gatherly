@@ -11,13 +11,16 @@ datasource db {
 model User {
   id                String   @id @default(cuid())
   name              String
-  email             String   @unique
+  email             String?  @unique
   username          String?  @unique
   number            Int?
-  phone             String   @default("")
+  phone             String?
   bio               String   @default("")
-  password          String
+  profileNote       String   @default("")
+  password          String?
   role              String   @default("personal")
+  authProvider      String   @default("password")
+  googleId          String?  @unique
   profileImage      String   @default("https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-image-182145777.jpg")
   avatar            String?
   socketId          String   @default("")
@@ -33,6 +36,32 @@ model User {
   updatedAt         DateTime @updatedAt
 
   @@map("users")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("blocks")
 }
 
 model PasswordResetToken {

@@ -1,4 +1,4 @@
-import { Camera, Edit3, Mail, Phone, UserRound } from 'lucide-react';
+import { Edit3, Phone, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Avatar from '../../../shared/components/Avatar';
 import { useAuthStore } from '../../auth/authStore';
@@ -13,7 +13,7 @@ export default function ProfilePage() {
           <div className="flex min-w-0 items-center gap-4">
             <Avatar name={user?.name || user?.username || user?.email} src={user?.avatar || user?.profileImage} size="lg" />
             <div className="min-w-0">
-              <h2 className="truncate font-display text-[24px] font-medium text-text-primary">{user?.name || 'Your profile'}</h2>
+              <h2 className="truncate font-display text-[24px] font-medium text-text-primary">@{user?.username || 'profile'}</h2>
               <p className="mt-1 truncate text-[14px] text-text-secondary">@{user?.username}</p>
             </div>
           </div>
@@ -36,16 +36,8 @@ export default function ProfilePage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Mail className="shrink-0 text-brand-primary" size={18} strokeWidth={1.6} />
-          <p className="min-w-0 truncate text-[15px] text-text-primary">{user?.email}</p>
-        </div>
-        <div className="flex items-center gap-3">
           <Phone className="shrink-0 text-brand-primary" size={18} strokeWidth={1.6} />
           <p className="min-w-0 truncate text-[15px] text-text-primary">{user?.phone || 'Phone number not added'}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Camera className="shrink-0 text-brand-primary" size={18} strokeWidth={1.6} />
-          <p className="text-[15px] text-text-primary">Profile photo visible in chat and status.</p>
         </div>
       </section>
     </div>

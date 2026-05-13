@@ -14,6 +14,16 @@ const emitToSocket = (roomOrSocketId, event, payload) => {
   io.to(roomOrSocketId).emit(event, payload);
 };
 
+const emitToAll = (event, payload) => {
+  const io = getIO();
+
+  if (!io) {
+    return;
+  }
+
+  io.emit(event, payload);
+};
+
 const emitToUser = async (userId, event, payload, senderId = null) => {
   const io = getIO();
 
@@ -70,6 +80,7 @@ const emitToChatMembers = async (chatId, event, payload, senderId = null) => {
 };
 
 module.exports = {
+  emitToAll,
   emitToSocket,
   emitToUser,
   emitToChatMembers,

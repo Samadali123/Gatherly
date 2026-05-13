@@ -43,7 +43,7 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
       upsertContact({
         userId: user.userId,
         name: user.name,
-        displayName: user.name || user.username,
+        displayName: user.username || user.name,
         target: user.username,
         username: user.username,
         profileImage: user.profileImage,
@@ -69,7 +69,7 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
         upsertContact({
           userId: senderUser.id,
           name: senderUser.name,
-          displayName: senderUser.name || senderUser.username || senderUser.email,
+          displayName: senderUser.username || senderUser.name || senderUser.email,
           target: senderUser.username || senderUser.email,
           username: senderUser.username || senderUser.email,
           email: senderUser.email,

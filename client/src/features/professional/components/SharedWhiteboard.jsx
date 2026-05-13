@@ -79,7 +79,7 @@ export default function SharedWhiteboard({ meetingId, onClose, readOnly = false,
   }, [meetingId, socket]);
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col bg-[#f7faf8]">
+    <div className="fixed inset-0 z-[90] flex h-dvh w-dvw flex-col overflow-hidden overscroll-none bg-[#f7faf8]">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border-default bg-white px-3 py-3 shadow-sm sm:px-4">
         <div className="min-w-0">
           <p className="text-[12px] font-medium uppercase tracking-[0.22em] text-text-secondary">Live whiteboard</p>
@@ -96,7 +96,7 @@ export default function SharedWhiteboard({ meetingId, onClose, readOnly = false,
           )}
         </div>
       </header>
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div className="relative h-[calc(100dvh-65px)] min-h-0 flex-1 overflow-hidden overscroll-none">
         <Tldraw components={components} store={storeRef.current} />
       </div>
     </div>

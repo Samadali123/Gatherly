@@ -1,14 +1,68 @@
 import '@livekit/components-styles';
-import { LiveKitRoom, PreJoin, VideoConference } from '@livekit/components-react';
-import { AlertCircle, Check, PenLine, Video, X } from 'lucide-react';
+import { LiveKitRoom, PreJoin, VideoConference, useLocalParticipant, useRoomContext } from '@livekit/components-react';
+import { AlertCircle, Check, MicOff, PenLine, Users, UserX, Video, VideoOff, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../../../services/api';
 import Spinner from '../../../shared/components/Spinner';
 import SharedWhiteboard from './SharedWhiteboard';
 
+const getMeetingErrorMessage = (error) => {
+  const message = String(error?.message || error || '').toLowerCase();
+
+  if (message.includes('invalid token')) {
+    return 'Meeting token is invalid. Please check LiveKit URL, API key, and API secret.';
+  }
+  if (message.includes('permission') || message.includes('notallowed')) {
+    return 'Camera or microphone permission was denied. Allow access in the browser and try again.';
+  }
+  if (message.includes('notreadable') || message.includes('device in use') || message.includes('could not start video')) {
+    return 'Your camera is already being used by another browser or app. Turn it off there, then try again.';
+  }
+  if (message.includes('signal connection')) {
+    return 'Could not connect to the meeting service. Please check the LiveKit configuration and try again.';
+  }
+
+  return error?.message || 'Unable to connect to meeting.';
+};
+
+function MeetingSocketControls({ socket, sessionId, setError }) {
+  const { localParticipant } = useLocalParticipant();
+  const room = useRoomContext();
+
+  useEffect(() => {
+    if (!socket || !sessionId || !localParticipant) return undefined;
+
+    const forceMuted = async ({ sessionId: targetSessionId }) => {
+      if (targetSessionId !== sessionId) return;
+      await localParticipant.setMicrophoneEnabled(false);
+      setError('The host muted your microphone.');
+    };
+    const forceCameraOff = async ({ sessionId: targetSessionId }) => {
+      if (targetSessionId !== sessionId) return;
+      await localParticipant.setCameraEnabled(false);
+      setError('The host turned your camera off.');
+    };
+    const removed = ({ sessionId: targetSessionId }) => {
+      if (targetSessionId !== sessionId) return;
+      setError('The host removed you from the meeting.');
+      room?.disconnect();
+    };
+
+    socket.on('room:meeting:force-muted', forceMuted);
+    socket.on('room:meeting:force-camera-off', forceCameraOff);
+    socket.on('room:meeting:removed', removed);
+
+    return () => {
+      socket.off('room:meeting:force-muted', forceMuted);
+      socket.off('room:meeting:force-camera-off', forceCameraOff);
+      socket.off('room:meeting:removed', removed);
+    };
+  }, [localParticipant, room, sessionId, setError, socket]);
+
+  return null;
+}
+
 export default function RoomMeetingPanel({ roomCode, onClose, socket, session, meetingState, mode = 'host' }) {
-  const navigate = useNavigate();
   const meetingEndTimerRef = useRef(null);
   const [meeting, setMeeting] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,16 +74,23 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const [meetingEndedOverlay, setMeetingEndedOverlay] = useState(false);
   const [leaveToasts, setLeaveToasts] = useState([]);
+  const [controlsPosition, setControlsPosition] = useState(null);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [waitingRoomOpen, setWaitingRoomOpen] = useState(false);
+  const [liveMeetingState, setLiveMeetingState] = useState(meetingState || { active: false, pending: [], approved: [], activeParticipants: [] });
+  const dragStateRef = useRef(null);
   const meetingJoinedRef = useRef(false);
   const leaveToastTimersRef = useRef(new Map());
   const currentUser = { id: session?.sessionId };
   const activeMeeting = {
-    hostId: meetingState?.hostSessionId || (mode === 'host' ? session?.sessionId : null),
+    hostId: liveMeetingState?.hostSessionId || (mode === 'host' ? session?.sessionId : null),
   };
   const isHost = mode === 'host' || Boolean(currentUser.id && activeMeeting.hostId && String(currentUser.id) === String(activeMeeting.hostId));
+  const pendingRequests = liveMeetingState?.pending || [];
+  const manageableParticipants = (liveMeetingState?.activeParticipants || []).filter((participant) => participant.sessionId !== session?.sessionId);
   const meetingId = roomCode;
-  const hostActionText = meetingState?.active ? 'Open meeting' : 'Start meeting';
-  const hostTitleText = meetingState?.active ? 'Open room meeting' : 'Start room meeting';
+  const hostActionText = 'Start meeting';
+  const hostTitleText = 'Start room meeting';
   const meetingEndedText = isHost ? 'Meeting ended' : 'The host has ended this meeting';
 
   const fetchMeetingToken = async () => {
@@ -46,7 +107,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       setUserChoices(null);
       socket?.emit('room:meeting:start');
     } catch (error) {
-      setError(error.response?.data?.message || 'Unable to start meeting. Check LiveKit configuration.');
+      setError(error.response?.data?.message || getMeetingErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -65,7 +126,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       setMeeting(await fetchMeetingToken());
       setUserChoices(null);
     } catch (error) {
-      setError(error.response?.data?.message || 'Unable to join meeting.');
+      setError(error.response?.data?.message || getMeetingErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -88,7 +149,12 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
     try {
       await api.delete(`/rooms/${roomCode}/meeting`);
       socket?.emit('meeting_ended', { meetingId });
-      navigate('/');
+      setMeeting(null);
+      setUserChoices(null);
+      setWaiting(false);
+      setWhiteboardOpen(false);
+      setConfirmEndOpen(false);
+      onClose?.();
     } catch (error) {
       setError(error.response?.data?.message || 'Unable to end meeting.');
     } finally {
@@ -122,7 +188,25 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
 
     setWaiting(false);
     setConfirmEndOpen(false);
+    setParticipantsOpen(false);
+    setWaitingRoomOpen(false);
     onClose?.();
+  };
+
+  const startControlsDrag = (event) => {
+    if (event.button !== 0) return;
+    const panel = event.currentTarget.closest('[data-meeting-control-panel]');
+    if (!panel) return;
+
+    const rect = panel.getBoundingClientRect();
+    dragStateRef.current = {
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+    setControlsPosition({ x: rect.left, y: rect.top });
+    event.preventDefault();
   };
 
   useEffect(() => {
@@ -142,8 +226,14 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
     if (!socket || !session?.sessionId) return undefined;
 
     const handleApproved = ({ sessionId }) => {
-      if (sessionId === session.sessionId) {
+      if (!sessionId || sessionId === session.sessionId) {
         joinApprovedMeeting();
+      }
+    };
+    const handleMeetingState = (state) => {
+      setLiveMeetingState(state || { active: false, pending: [], approved: [], activeParticipants: [] });
+      if ((state?.pending || []).length) {
+        setWaitingRoomOpen(true);
       }
     };
     const handleDenied = ({ sessionId }) => {
@@ -152,12 +242,26 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
         setError('The host did not admit you to this meeting.');
       }
     };
-    const handleRoomEnded = () => {
+    const closeAfterMeetingEnded = () => {
+      meetingJoinedRef.current = false;
       setMeeting(null);
       setUserChoices(null);
       setWaiting(false);
-      setError(isHost ? 'Meeting ended.' : 'The host ended this meeting.');
+      setWhiteboardOpen(false);
+      setWhiteboardReadOnly(false);
+      setParticipantsOpen(false);
+      setWaitingRoomOpen(false);
+      setLiveMeetingState({ active: false, pending: [], approved: [], activeParticipants: [] });
+      setMeetingEndedOverlay(true);
+      if (meetingEndTimerRef.current) {
+        window.clearTimeout(meetingEndTimerRef.current);
+      }
+      meetingEndTimerRef.current = window.setTimeout(() => {
+        setMeetingEndedOverlay(false);
+        onClose?.();
+      }, 1800);
     };
+    const handleRoomEnded = closeAfterMeetingEnded;
     const handleWhiteboardOpened = () => {
       if (isHost) return;
       setWhiteboardReadOnly(true);
@@ -168,21 +272,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       setWhiteboardOpen(false);
       setWhiteboardReadOnly(false);
     };
-    const handleMeetingEnded = () => {
-      meetingJoinedRef.current = false;
-      setMeeting(null);
-      setUserChoices(null);
-      setWaiting(false);
-      setWhiteboardOpen(false);
-      setMeetingEndedOverlay(true);
-      if (meetingEndTimerRef.current) {
-        window.clearTimeout(meetingEndTimerRef.current);
-      }
-      meetingEndTimerRef.current = window.setTimeout(() => {
-        setMeetingEndedOverlay(false);
-        navigate('/');
-      }, 3000);
-    };
+    const handleMeetingEnded = closeAfterMeetingEnded;
     const handleParticipantLeftNotify = ({ displayName }) => {
       if (!isHost) return;
 
@@ -201,6 +291,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
     };
 
     socket.on('room:meeting:approved', handleApproved);
+    socket.on('room:meeting:state', handleMeetingState);
     socket.on('room:meeting:denied', handleDenied);
     socket.on('room:meeting:ended', handleRoomEnded);
     socket.on('whiteboard_opened', handleWhiteboardOpened);
@@ -210,6 +301,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
 
     return () => {
       socket.off('room:meeting:approved', handleApproved);
+      socket.off('room:meeting:state', handleMeetingState);
       socket.off('room:meeting:denied', handleDenied);
       socket.off('room:meeting:ended', handleRoomEnded);
       socket.off('whiteboard_opened', handleWhiteboardOpened);
@@ -222,7 +314,33 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       leaveToastTimersRef.current.forEach((timers) => timers.forEach((timer) => window.clearTimeout(timer)));
       leaveToastTimersRef.current.clear();
     };
-  }, [isHost, meetingId, navigate, roomCode, session?.sessionId, socket]);
+  }, [isHost, meetingId, onClose, roomCode, session?.sessionId, socket]);
+
+  useEffect(() => {
+    setLiveMeetingState(meetingState || { active: false, pending: [], approved: [], activeParticipants: [] });
+  }, [meetingState]);
+
+  useEffect(() => {
+    const handleMove = (event) => {
+      const drag = dragStateRef.current;
+      if (!drag) return;
+
+      setControlsPosition({
+        x: Math.max(8, Math.min(window.innerWidth - drag.width - 8, event.clientX - drag.offsetX)),
+        y: Math.max(8, Math.min(window.innerHeight - drag.height - 8, event.clientY - drag.offsetY)),
+      });
+    };
+    const handleUp = () => {
+      dragStateRef.current = null;
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[75] flex items-center justify-center bg-[rgba(15,31,27,0.82)] p-0 sm:px-4 sm:py-6">
@@ -256,7 +374,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                   }}
                   joinLabel={isHost ? hostActionText : 'Join meeting'}
                   micLabel="Microphone"
-                  onError={(nextError) => setError(nextError.message || 'Unable to access camera or microphone.')}
+                  onError={(nextError) => setError(getMeetingErrorMessage(nextError))}
                   onSubmit={(choices) => setUserChoices(choices)}
                   userLabel="Display name"
                 />
@@ -279,7 +397,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                 connect
                 data-lk-theme="default"
                 onDisconnected={handleLiveKitDisconnected}
-                onError={(nextError) => setError(nextError.message || 'Unable to connect to meeting.')}
+                onError={(nextError) => setError(getMeetingErrorMessage(nextError))}
                 serverUrl={meeting.url}
                 token={meeting.token}
                 video={
@@ -289,6 +407,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                 }
                 className="h-full"
               >
+                <MeetingSocketControls sessionId={session?.sessionId} setError={setError} socket={socket} />
                 <VideoConference />
               </LiveKitRoom>
               {isHost ? (
@@ -308,13 +427,32 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                   >
                     End Meeting
                   </button>
+                  <button
+                    className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/20 bg-white px-4 text-[13px] font-medium text-brand-primary shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
+                    onClick={() => setWaitingRoomOpen((current) => !current)}
+                    type="button"
+                  >
+                    <Users size={16} strokeWidth={1.7} />
+                    Waiting room{pendingRequests.length ? ` (${pendingRequests.length})` : ''}
+                  </button>
+                  <button
+                    className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/20 bg-white px-4 text-[13px] font-medium text-brand-primary shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
+                    onClick={() => setParticipantsOpen((current) => !current)}
+                    type="button"
+                  >
+                    <Users size={16} strokeWidth={1.7} />
+                    View participants{manageableParticipants.length ? ` (${manageableParticipants.length})` : ''}
+                  </button>
                 </div>
               ) : null}
-              {isHost && (meetingState?.pending || []).length ? (
+              {isHost && waitingRoomOpen ? (
                 <div className="absolute inset-x-2 bottom-2 z-10 max-h-[45vh] overflow-y-auto rounded-xl border border-white/15 bg-white p-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-4 sm:w-[300px]">
-                  <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-text-secondary">Waiting room</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-text-secondary">Waiting room</p>
+                    <button className="text-text-secondary" onClick={() => setWaitingRoomOpen(false)} type="button"><X size={16} /></button>
+                  </div>
                   <div className="mt-3 space-y-3">
-                    {meetingState.pending.map((request) => (
+                    {pendingRequests.length ? pendingRequests.map((request) => (
                       <div className="rounded-xl border border-border-default bg-bg-secondary p-3" key={request.sessionId}>
                         <p className="font-medium text-text-primary">{request.alias}</p>
                         <div className="mt-3 flex gap-2">
@@ -326,21 +464,53 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                           </button>
                         </div>
                       </div>
-                    ))}
+                    )) : <p className="text-[14px] leading-[1.6] text-text-secondary">No one is waiting yet.</p>}
+                  </div>
+                </div>
+              ) : null}
+              {isHost && participantsOpen ? (
+                <div
+                  className={`z-10 max-h-[45vh] w-[min(92vw,320px)] overflow-y-auto rounded-xl border border-white/15 bg-white p-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] ${controlsPosition ? 'fixed' : 'absolute bottom-2 right-2 sm:bottom-4 sm:right-4'}`}
+                  data-meeting-control-panel
+                  style={controlsPosition ? { left: controlsPosition.x, top: controlsPosition.y } : undefined}
+                >
+                  <div className="-mx-1 -mt-1 mb-3 cursor-move rounded-lg px-1 py-1" onMouseDown={startControlsDrag} role="presentation">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="select-none text-[12px] font-medium uppercase tracking-[0.18em] text-text-secondary">Participants</p>
+                      <button className="cursor-pointer text-text-secondary" onClick={() => setParticipantsOpen(false)} type="button"><X size={16} /></button>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {manageableParticipants.length ? manageableParticipants.map((participant) => (
+                        <div className="rounded-xl border border-border-default bg-bg-secondary p-3" key={participant.sessionId}>
+                          <p className="truncate font-medium text-text-primary">{participant.displayName || 'Participant'}</p>
+                          <div className="mt-3 grid grid-cols-3 gap-2">
+                            <button className="inline-flex min-h-9 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary" onClick={() => socket?.emit('room:meeting:force-mute', { sessionId: participant.sessionId })} type="button" title="Mute microphone">
+                              <MicOff size={15} />
+                            </button>
+                            <button className="inline-flex min-h-9 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary" onClick={() => socket?.emit('room:meeting:force-camera-off', { sessionId: participant.sessionId })} type="button" title="Turn camera off">
+                              <VideoOff size={15} />
+                            </button>
+                            <button className="inline-flex min-h-9 items-center justify-center rounded-full border border-[#f2cec1] bg-[#fff4ef] text-[#9a3412]" onClick={() => socket?.emit('room:meeting:remove-participant', { sessionId: participant.sessionId })} type="button" title="Remove participant">
+                              <UserX size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      )) : <p className="text-[14px] leading-[1.6] text-text-secondary">No participants joined yet.</p>}
                   </div>
                 </div>
               ) : null}
             </div>
           ) : (
             <div className="scrollbar-chat flex h-full items-center justify-center overflow-y-auto p-3 sm:p-6">
-              <div className="grid w-full max-w-4xl gap-4 md:grid-cols-[minmax(0,1fr)_300px]">
+              <div className={`grid w-full gap-4 ${isHost ? 'max-w-4xl md:grid-cols-[minmax(0,1fr)_300px]' : 'max-w-2xl'}`}>
               <div className="rounded-xl border border-white/10 bg-white p-5 text-center sm:p-6">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-subtle text-brand-primary">
                   <Video size={24} strokeWidth={1.7} />
                 </div>
                 <h3 className="mt-4 font-display text-[26px] font-medium text-text-primary">{isHost ? hostTitleText : 'Join room meeting'}</h3>
                 <p className="mt-2 text-[14px] leading-[1.6] text-text-secondary">
-                  {isHost ? 'Start the LiveKit call and admit people from the waiting room.' : 'Ask the host to admit you before joining the LiveKit room.'}
+                  {isHost ? 'Start the meeting and admit people from the waiting room.' : 'Ask the host to admit you before joining the room meeting.'}
                 </p>
                 {error ? (
                   <div className="mt-4 flex items-start gap-2 rounded-xl border border-[#f2cec1] bg-[#fff4ef] px-4 py-3 text-left text-[13px] text-text-primary">
@@ -358,11 +528,11 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                   {waiting ? 'Waiting for host' : isHost ? hostActionText : 'Request to join'}
                 </button>
               </div>
+              {isHost ? (
               <div className="rounded-xl border border-white/10 bg-white p-5">
                 <p className="text-[12px] font-medium uppercase tracking-[0.22em] text-text-secondary">Waiting room</p>
-                {isHost ? (
                   <div className="mt-4 space-y-3">
-                    {(meetingState?.pending || []).length ? meetingState.pending.map((request) => (
+                    {pendingRequests.length ? pendingRequests.map((request) => (
                       <div className="rounded-xl border border-border-default bg-bg-secondary p-3" key={request.sessionId}>
                         <p className="font-medium text-text-primary">{request.alias}</p>
                         <div className="mt-3 flex gap-2">
@@ -376,12 +546,8 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                       </div>
                     )) : <p className="text-[14px] leading-[1.6] text-text-secondary">No one is waiting yet.</p>}
                   </div>
-                ) : (
-                  <p className="mt-4 text-[14px] leading-[1.6] text-text-secondary">
-                    {waiting ? 'Your request is visible to the host.' : 'Request access and keep this panel open.'}
-                  </p>
-                )}
               </div>
+              ) : null}
               </div>
             </div>
           )}

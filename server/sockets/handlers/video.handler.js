@@ -74,6 +74,8 @@ const formatDuration = (seconds = 0) => {
   return `${minutes}:${String(rest).padStart(2, '0')}`;
 };
 
+const getDisplayUsername = (user) => user?.username || user?.phone || user?.email || user?.name || 'User';
+
 const emitCallMessage = async (io, meta, text, status, duration = 0) => {
   if (!meta?.caller || !meta?.receiver || !text) {
     return null;
@@ -85,8 +87,9 @@ const emitCallMessage = async (io, meta, text, status, duration = 0) => {
     receiver: meta.receiver.username || meta.receiver.email,
     attachments: [],
     statusContext: {
-      type: 'text',
+      type: 'call',
       text: status || 'call',
+      duration,
     },
   });
 
@@ -112,7 +115,7 @@ const finishCallWithMessage = async (io, callId, status, reason = status) => {
     let text = 'Call ended';
 
     if (status === 'missed' || status === 'rejected') {
-      text = `${meta.receiver.name || meta.receiver.username || 'User'} did not answer the call.`;
+      text = `${getDisplayUsername(meta.receiver)}\ndid not answer the video call.`;
     } else if (reason === 'disconnected') {
       text = `Call disconnected${duration ? ` after ${formatDuration(duration)}` : ''}.`;
     } else if (duration) {
@@ -261,7 +264,7 @@ const registerVideoHandlers = (io, socket) => {
         await finishCallWithMessage(io, call.callId, 'missed');
         socket.emit('call-ended', {
           callId: call.callId,
-          peer: { displayName: receiver.name || receiver.username || receiver.email, id: receiver._id.toString(), username: receiver.username },
+          peer: { displayName: getDisplayUsername(receiver), id: receiver._id.toString(), username: receiver.username },
           reason: 'missed',
         });
         return;
@@ -271,7 +274,7 @@ const registerVideoHandlers = (io, socket) => {
       receiverSocketIds.forEach((receiverSocketId) => io.to(receiverSocketId).emit('incoming-call', {
         callId: call.callId,
         caller: {
-          displayName: caller.name || caller.username || caller.email,
+          displayName: getDisplayUsername(caller),
           id: caller._id.toString(),
         },
         callerId: caller._id.toString(),
@@ -285,11 +288,11 @@ const registerVideoHandlers = (io, socket) => {
           await finishCallWithMessage(io, call.callId, 'missed');
           const payload = {
             callId: call.callId,
-            peer: { displayName: receiver.name || receiver.username || receiver.email, id: receiver._id.toString(), username: receiver.username },
+            peer: { displayName: getDisplayUsername(receiver), id: receiver._id.toString(), username: receiver.username },
             reason: 'missed',
           };
           socket.emit('call-ended', payload);
-          receiverSocketIds.forEach((receiverSocketId) => io.to(receiverSocketId).emit('call-ended', { ...payload, peer: { displayName: caller.name || caller.username || caller.email, id: caller._id.toString(), username: caller.username } }));
+          receiverSocketIds.forEach((receiverSocketId) => io.to(receiverSocketId).emit('call-ended', { ...payload, peer: { displayName: getDisplayUsername(caller), id: caller._id.toString(), username: caller.username } }));
         }, 30000)
       );
       socket.emit('call-ringing', {

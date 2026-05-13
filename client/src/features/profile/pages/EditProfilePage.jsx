@@ -17,7 +17,6 @@ export default function EditProfilePage() {
   const setUser = useAuthStore((state) => state.setUser);
   const { pushToast } = useUiStore();
   const [form, setForm] = useState({
-    displayName: '',
     username: '',
     bio: '',
     phone: '',
@@ -39,7 +38,6 @@ export default function EditProfilePage() {
     }
 
     setForm({
-      displayName: user.name || '',
       username: user.username || '',
       bio: user.bio || '',
       phone: user.phone || '',
@@ -48,7 +46,6 @@ export default function EditProfilePage() {
 
   const changedPayload = useMemo(() => {
     const payload = {};
-    if (form.displayName.trim() !== (user?.name || '')) payload.displayName = form.displayName.trim();
     if (form.username.trim() !== (user?.username || '')) payload.username = form.username.trim();
     if (form.bio.trim() !== (user?.bio || '')) payload.bio = form.bio.trim();
     if (form.phone.trim() !== (user?.phone || '')) payload.phone = form.phone.trim();
@@ -58,8 +55,6 @@ export default function EditProfilePage() {
   const validate = () => {
     const nextErrors = {};
 
-    if (!form.displayName.trim()) nextErrors.displayName = 'Display name is required.';
-    if (form.displayName.trim().length > 50) nextErrors.displayName = 'Display name must be 50 characters or less.';
     if (!usernamePattern.test(form.username.trim())) nextErrors.username = 'Username must be 3-30 letters, numbers, or underscores.';
     if (form.bio.length > 160) nextErrors.bio = 'Bio must be 160 characters or less.';
     if (form.phone && !/^[+()\-\s0-9]*$/.test(form.phone)) nextErrors.phone = 'Enter a valid phone number.';
@@ -105,6 +100,12 @@ export default function EditProfilePage() {
     try {
       const response = await api.patch('/users/profile', changedPayload);
       setUser({ ...user, ...response.data.data.user });
+      window.setTimeout(() => {
+        setForm({ username: '', bio: '', phone: '' });
+        setUsernameStatus('idle');
+        setUsernameMessage('');
+        setErrors({});
+      }, 0);
       pushToast('Profile updated successfully', 'success');
     } catch (error) {
       const apiErrors = error.response?.data?.errors;
@@ -186,19 +187,13 @@ export default function EditProfilePage() {
           <input accept="image/*" className="hidden" onChange={selectAvatar} ref={fileInputRef} type="file" />
           <div>
             <h2 className="font-display text-[26px] font-medium text-text-primary">Edit Profile</h2>
-            <p className="mt-1 text-[14px] text-text-secondary">Update how people see you in chats.</p>
+            <p className="mt-1 text-[14px] text-text-secondary">Manage your profile</p>
           </div>
         </div>
       </section>
 
       <section className="rounded-xl border border-border-default bg-bg-primary p-5 shadow-card sm:p-7">
         <div className="grid gap-5">
-          <label className="grid gap-2">
-            <span className="text-[13px] font-medium text-text-primary">Display name</span>
-            <input className={fieldClass} maxLength={50} onChange={(event) => setForm({ ...form, displayName: event.target.value })} value={form.displayName} />
-            {errors.displayName ? <span className="text-[12px] text-red-600">{errors.displayName}</span> : null}
-          </label>
-
           <label className="grid gap-2">
             <span className="text-[13px] font-medium text-text-primary">Username</span>
             <input className={fieldClass} maxLength={30} onBlur={checkUsername} onChange={(event) => setForm({ ...form, username: event.target.value })} value={form.username} />

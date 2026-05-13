@@ -8,7 +8,7 @@ const getLiveKitRoomName = (roomCode) => `gatherly-${roomCode}`;
 
 const createMeetingToken = ({ roomName, identity, name, role }) => {
   if (!isMeetingConfigured()) {
-    const error = new Error('LiveKit meeting service is not configured');
+    const error = new Error('Meeting service is not configured. Check LiveKit URL, API key, and API secret.');
     error.statusCode = 503;
     throw error;
   }

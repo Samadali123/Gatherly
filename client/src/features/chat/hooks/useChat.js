@@ -15,6 +15,7 @@ export const useChat = () => {
     setActiveConversation,
     setContacts,
     setMessages,
+    prependMessages,
     setContactUnread,
     touchContactLastMessage,
     appendMessage,
@@ -30,6 +31,8 @@ export const useChat = () => {
   } = useChatStore();
   const { pushToast } = useUiStore();
   const [loadingConversation, setLoadingConversation] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [conversationPage, setConversationPage] = useState({ hasMore: false, nextCursor: null, key: null });
   const [sending, setSending] = useState(false);
   const [pollLoading, setPollLoading] = useState(false);
   const visibleContacts = contacts.filter(
@@ -56,8 +59,8 @@ const getConversationTarget = (conversation) =>
           (response.data.data || []).map((contact) => ({
             ...contact,
             userId: contact.id || contact._id,
-            displayName: contact.name || contact.username,
-            target: contact.username || contact.email,
+            displayName: contact.username || contact.name,
+            target: contact.username || contact.email || contact.phone,
             type: 'dm',
           }))
         );
@@ -86,9 +89,13 @@ const getConversationTarget = (conversation) =>
     setLoadingConversation(true);
 
     try {
-      const response = await api.get(`/chat/conversation?receiver=${encodeURIComponent(getConversationTarget(conversation))}`);
-      const loadedMessages = response.data.data || [];
+      const response = await api.get(`/chat/conversation?receiver=${encodeURIComponent(getConversationTarget(conversation))}&limit=30`);
+      const payload = Array.isArray(response.data.data)
+        ? { messages: response.data.data, hasMore: false, nextCursor: null }
+        : response.data.data || { messages: [], hasMore: false, nextCursor: null };
+      const loadedMessages = payload.messages || [];
       setMessages(key, loadedMessages);
+      setConversationPage({ hasMore: Boolean(payload.hasMore), nextCursor: payload.nextCursor, key });
       if (loadedMessages.length) {
         touchContactLastMessage({ currentUser: user, message: loadedMessages[loadedMessages.length - 1] });
       }
@@ -99,6 +106,28 @@ const getConversationTarget = (conversation) =>
       pushToast(error.response?.data?.message || 'Unable to load conversation', 'error');
     } finally {
       setLoadingConversation(false);
+    }
+  };
+
+  const loadOlderMessages = async () => {
+    if (!activeConversation || loadingOlder || !conversationPage.hasMore || !conversationPage.nextCursor) {
+      return;
+    }
+
+    setLoadingOlder(true);
+    try {
+      const response = await api.get(
+        `/chat/conversation?receiver=${encodeURIComponent(getConversationTarget(activeConversation))}&limit=30&before=${encodeURIComponent(conversationPage.nextCursor)}`
+      );
+      const payload = Array.isArray(response.data.data)
+        ? { messages: response.data.data, hasMore: false, nextCursor: null }
+        : response.data.data || { messages: [], hasMore: false, nextCursor: null };
+      prependMessages(activeConversation.key, payload.messages || []);
+      setConversationPage({ hasMore: Boolean(payload.hasMore), nextCursor: payload.nextCursor, key: activeConversation.key });
+    } catch (error) {
+      pushToast(error.response?.data?.message || 'Unable to load older messages', 'error');
+    } finally {
+      setLoadingOlder(false);
     }
   };
 
@@ -339,10 +368,13 @@ const getConversationTarget = (conversation) =>
     pins: activeConversation ? pinsByChat[activeConversation.chatId] || [] : [],
     polls: activeConversation ? pollsByChat[activeConversation.chatId] || [] : [],
     loadingConversation,
+    loadingOlder,
+    hasOlderMessages: conversationPage.key === activeConversation?.key && conversationPage.hasMore,
     sending,
     pollLoading,
     selectConversation,
     sendMessage,
+    loadOlderMessages,
     pinMessage,
     unpinMessage,
     deleteMessage,

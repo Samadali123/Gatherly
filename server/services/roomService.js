@@ -92,7 +92,7 @@ const joinRoom = async ({ room, password }) => {
     const isValid = password ? await bcrypt.compare(password, room.passwordHash) : false;
 
     if (!isValid) {
-      const error = new Error('Password is not correct for this room');
+      const error = new Error('Password you entered is not correct to enter this room.');
       error.statusCode = 401;
       throw error;
     }
@@ -106,7 +106,7 @@ const joinRoom = async ({ room, password }) => {
     throw error;
   }
 
-  const identity = createParticipantIdentity();
+  const identity = createParticipantIdentity(participantCount + 1);
   const sessionId = generateSessionId();
 
   const participant = await anonParticipantModel.create({
@@ -168,6 +168,7 @@ const serializeAnonMessage = (message, sessionId = null) => {
 };
 
 const createAnonMessage = async ({ room, participant, content, parentMessageId = null, attachments = [] }) => {
+  assertRoomActive(room);
   let replyTo = null;
 
   if (parentMessageId) {
@@ -206,7 +207,14 @@ const listAnonMessages = async (roomCode, sessionId = null) => {
 
 const findAnonMessage = ({ roomCode, messageId }) => anonMessageModel.findOne({ _id: messageId, roomCode });
 
+const assertActiveRoomByCode = async (roomCode) => {
+  const room = await findRoomByCode(roomCode);
+  assertRoomActive(room);
+  return room;
+};
+
 const pinAnonMessage = async ({ roomCode, messageId, sessionId }) => {
+  await assertActiveRoomByCode(roomCode);
   const message = await findAnonMessage({ roomCode, messageId });
 
   if (!message) {
@@ -220,6 +228,7 @@ const pinAnonMessage = async ({ roomCode, messageId, sessionId }) => {
 };
 
 const unpinAnonMessage = async ({ roomCode, messageId, sessionId }) => {
+  await assertActiveRoomByCode(roomCode);
   const message = await findAnonMessage({ roomCode, messageId });
 
   if (!message) {
@@ -239,6 +248,7 @@ const unpinAnonMessage = async ({ roomCode, messageId, sessionId }) => {
 };
 
 const reactToAnonMessage = async ({ roomCode, messageId, sessionId, emoji }) => {
+  await assertActiveRoomByCode(roomCode);
   const message = await findAnonMessage({ roomCode, messageId });
 
   if (!message) {
@@ -279,6 +289,7 @@ const createAnonPoll = async ({ room, participant, question, options }) => {
 };
 
 const voteAnonPoll = async ({ roomCode, pollId, optionId, sessionId }) => {
+  await assertActiveRoomByCode(roomCode);
   const poll = await anonPollModel.findOne({ _id: pollId, roomCode });
 
   if (!poll) {

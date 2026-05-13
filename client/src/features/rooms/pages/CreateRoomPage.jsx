@@ -2,9 +2,11 @@ import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../../services/api';
+import { connectSocket, socket } from '../../../services/socket';
 import ButtonSpinner from '../../../shared/components/ButtonSpinner';
 import { getFriendlyErrorMessage } from '../../../shared/utils/errorMessage';
 import { useUiStore } from '../../chat/chatStore';
+import { useAuthStore } from '../../auth/authStore';
 
 const toDatetimeLocalValue = (date) => {
   const offsetMs = date.getTimezoneOffset() * 60000;
@@ -14,6 +16,7 @@ const toDatetimeLocalValue = (date) => {
 const minutesFromNow = (minutes) => toDatetimeLocalValue(new Date(Date.now() + minutes * 60 * 1000));
 
 export default function CreateRoomPage() {
+  const accessToken = useAuthStore((state) => state.accessToken);
   const { pushToast } = useUiStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -39,6 +42,28 @@ export default function CreateRoomPage() {
 
     return () => window.clearTimeout(timeoutId);
   }, [query]);
+
+  useEffect(() => {
+    if (accessToken && !socket.connected) {
+      connectSocket(accessToken).catch(() => {});
+    }
+
+    const handleRoomCreated = (room) => {
+      setRooms((current) => {
+        if (query.trim()) {
+          const lowerQuery = query.trim().toLowerCase();
+          const matches = [room.code, room.name].filter(Boolean).some((value) => value.toLowerCase().includes(lowerQuery));
+          if (!matches) return current;
+        }
+
+        const withoutDuplicate = current.filter((entry) => entry.code !== room.code);
+        return [room, ...withoutDuplicate].slice(0, 25);
+      });
+    };
+
+    socket.on('room:created', handleRoomCreated);
+    return () => socket.off('room:created', handleRoomCreated);
+  }, [accessToken, query]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -100,22 +125,6 @@ export default function CreateRoomPage() {
                 type="datetime-local"
                 value={form.expiresAt}
               />
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { label: '5 min', minutes: 5 },
-                  { label: '1 hour', minutes: 60 },
-                  { label: '24 hours', minutes: 1440 },
-                ].map((option) => (
-                  <button
-                    className="rounded-full border border-border-default bg-white px-3 py-1.5 text-[12px] font-medium text-text-secondary hover:border-brand-primary hover:text-brand-primary"
-                    key={option.label}
-                    onClick={() => setForm((current) => ({ ...current, expiresAt: minutesFromNow(option.minutes) }))}
-                    type="button"
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
             </label>
 
             <label className="space-y-2">
@@ -163,7 +172,7 @@ export default function CreateRoomPage() {
         <label className="mt-4 flex items-center gap-3 rounded-xl border border-border-default bg-white px-3 py-2">
           <Search className="text-text-secondary" size={16} strokeWidth={1.5} />
           <input
-            className="min-h-11 min-w-0 flex-1 border-0 bg-transparent text-[14px] text-text-primary outline-none placeholder:text-text-secondary focus:border-0 focus:outline-none focus:ring-0"
+            className="min-h-11 min-w-0 flex-1 border-0 bg-transparent text-[14px] text-text-primary outline-none placeholder:text-text-secondary focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search by room code"
             value={query}

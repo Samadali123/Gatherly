@@ -15,6 +15,20 @@ const initialCall = {
   state: 'idle',
 };
 
+const getMediaErrorMessage = (error) => {
+  const message = String(error?.name || error?.message || '').toLowerCase();
+  if (message.includes('notallowed') || message.includes('permission')) {
+    return 'Camera or microphone permission was denied. Allow access in your browser and try again.';
+  }
+  if (message.includes('notreadable') || message.includes('in use')) {
+    return 'Your camera is already being used by another browser or app. Turn it off there, then try again.';
+  }
+  if (message.includes('notfound')) {
+    return 'No camera or microphone was found on this device.';
+  }
+  return 'Unable to access camera or microphone.';
+};
+
 export const useWebRTCCall = (currentUser) => {
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
@@ -126,13 +140,17 @@ export const useWebRTCCall = (currentUser) => {
 
   const acceptCall = useCallback(async () => {
     const active = callRef.current;
-    await getLocalStream();
-    setCall((current) => ({ ...current, state: 'connected', startedAt: Date.now() }));
-    socket.emit('accept-call', {
-      callId: active.callId,
-      callerId: active.peerId,
-      roomId: active.roomId,
-    });
+    try {
+      await getLocalStream();
+      setCall((current) => ({ ...current, state: 'connected', startedAt: Date.now() }));
+      socket.emit('accept-call', {
+        callId: active.callId,
+        callerId: active.peerId,
+        roomId: active.roomId,
+      });
+    } catch (error) {
+      setCall((current) => ({ ...current, reason: getMediaErrorMessage(error) }));
+    }
   }, [getLocalStream, setCall]);
 
   const rejectCall = useCallback(() => {
@@ -254,12 +272,16 @@ export const useWebRTCCall = (currentUser) => {
       setCall((current) => ({ ...current, callId, roomId, state: 'connected', startedAt: current.startedAt || Date.now() }));
 
       if (active.direction === 'outgoing') {
-        const stream = localStreamRef.current || (await getLocalStream());
-        attachStream(stream);
-        const peerConnection = await createPeerConnection(roomId);
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        socket.emit('offer', { offer, roomId });
+        try {
+          const stream = localStreamRef.current || (await getLocalStream());
+          attachStream(stream);
+          const peerConnection = await createPeerConnection(roomId);
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
+          socket.emit('offer', { offer, roomId });
+        } catch (error) {
+          setCall((current) => ({ ...current, reason: getMediaErrorMessage(error) }));
+        }
       }
     };
 

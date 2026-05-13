@@ -1,4 +1,6 @@
 const userService = require('../../../services/userService');
+const chatService = require('../../../services/chatService');
+const socialService = require('../../../services/socialService');
 const uploadService = require('../../../services/uploadService');
 const cacheService = require('../../../services/cacheService');
 const { hasConnectedSocket } = require('../../../sockets/state');
@@ -6,6 +8,29 @@ const { sendError, sendSuccess } = require('../../../utils/response');
 
 const health = (req, res) =>
   sendSuccess(res, { uptime: process.uptime(), timestamp: new Date() }, 'OK');
+
+const toPublicUser = async (user, viewerId, extra = {}) => {
+  const [relationship, counts] = await Promise.all([
+    socialService.getRelationship({ viewerId, targetId: user._id }),
+    socialService.countForUser(user._id),
+  ]);
+
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    username: user.username,
+    phone: user.phone || '',
+    bio: user.bio || '',
+    profileNote: user.profileNote || '',
+    avatar: user.avatar || user.profileImage,
+    profileImage: user.profileImage,
+    online: hasConnectedSocket(user.socketId),
+    relationship,
+    counts,
+    ...extra,
+  };
+};
 
 const updateDnd = async (req, res, next) => {
   try {
@@ -31,36 +56,30 @@ const search = async (req, res, next) => {
     const currentRole = userService.normalizeRole(currentUser?.role);
 
     if (!query) {
-      const users = await userService.listChatUsers(req.user.userId, currentRole);
-      return sendSuccess(
-        res,
-        users.map((user) => ({
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          username: user.username,
-          avatar: user.avatar || user.profileImage,
-          profileImage: user.profileImage,
-          online: hasConnectedSocket(user.socketId),
-        })),
-        'Users fetched'
-      );
+      const users = await chatService.listDirectContactsForUser(currentUser);
+      const data = await Promise.all(users.map((user) => toPublicUser(user, req.user.userId, {
+        lastMessagePreview: user.lastMessagePreview,
+        lastMessageAt: user.lastMessageAt,
+      })));
+      return sendSuccess(res, data, 'Users fetched');
     }
 
     const users = await userService.searchUsers(query, req.user.userId, currentRole);
-    return sendSuccess(
-      res,
-      users.map((user) => ({
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        username: user.username,
-        avatar: user.avatar || user.profileImage,
-        profileImage: user.profileImage,
-        online: hasConnectedSocket(user.socketId),
-      })),
-      'Users fetched'
-    );
+    const data = await Promise.all(users.map((user) => toPublicUser(user, req.user.userId)));
+    return sendSuccess(res, data, 'Users fetched');
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getProfile = async (req, res, next) => {
+  try {
+    const user = await userService.findById(req.params.id);
+    if (!user) {
+      return sendError(res, 'User not found', 404);
+    }
+
+    return sendSuccess(res, await toPublicUser(user, req.user.userId), 'User profile fetched');
   } catch (error) {
     return next(error);
   }
@@ -101,6 +120,10 @@ const updateProfile = async (req, res, next) => {
       payload.bio = req.body.bio;
     }
 
+    if (req.body.profileNote !== undefined) {
+      payload.profileNote = req.body.profileNote;
+    }
+
     if (req.body.phone !== undefined) {
       payload.phone = req.body.phone;
     }
@@ -129,6 +152,66 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const follow = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.userId) {
+      return sendError(res, 'You cannot follow yourself', 400);
+    }
+
+    const target = await userService.findById(req.params.id);
+    if (!target) return sendError(res, 'User not found', 404);
+
+    await socialService.followUser(req.user.userId, req.params.id);
+    cacheService.delByPrefix('http:user:').catch(() => {});
+    return sendSuccess(res, await toPublicUser(target, req.user.userId), 'User followed');
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const unfollow = async (req, res, next) => {
+  try {
+    const target = await userService.findById(req.params.id);
+    if (!target) return sendError(res, 'User not found', 404);
+
+    await socialService.unfollowUser(req.user.userId, req.params.id);
+    cacheService.delByPrefix('http:user:').catch(() => {});
+    return sendSuccess(res, await toPublicUser(target, req.user.userId), 'User unfollowed');
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const block = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.userId) {
+      return sendError(res, 'You cannot block yourself', 400);
+    }
+
+    const target = await userService.findById(req.params.id);
+    if (!target) return sendError(res, 'User not found', 404);
+
+    await socialService.blockUser(req.user.userId, req.params.id);
+    cacheService.delByPrefix('http:user:').catch(() => {});
+    return sendSuccess(res, await toPublicUser(target, req.user.userId), 'User blocked');
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const unblock = async (req, res, next) => {
+  try {
+    const target = await userService.findById(req.params.id);
+    if (!target) return sendError(res, 'User not found', 404);
+
+    await socialService.unblockUser(req.user.userId, req.params.id);
+    cacheService.delByPrefix('http:user:').catch(() => {});
+    return sendSuccess(res, await toPublicUser(target, req.user.userId), 'User unblocked');
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const updateAvatar = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -152,7 +235,12 @@ module.exports = {
   health,
   updateDnd,
   search,
+  getProfile,
   checkUsername,
+  follow,
+  unfollow,
+  block,
+  unblock,
   updateProfile,
   updateAvatar,
 };

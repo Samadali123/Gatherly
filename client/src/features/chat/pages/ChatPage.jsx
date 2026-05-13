@@ -6,6 +6,7 @@ import {
   MoreVertical,
   Phone,
   Reply,
+  Search,
   Trash2,
   UserRound,
   X,
@@ -23,6 +24,7 @@ import MessageBubble from '../components/MessageBubble';
 import PinnedBanner from '../components/PinnedBanner';
 import PinsDrawer from '../components/PinsDrawer';
 import ThreadPanel from '../components/ThreadPanel';
+import UserProfileModal from '../components/UserProfileModal';
 import { useChatStore, useUiStore } from '../chatStore';
 import { useChat } from '../hooks/useChat';
 import { useSocket } from '../hooks/useSocket';
@@ -38,6 +40,10 @@ export default function ChatPage() {
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profilePreviewOpen, setProfilePreviewOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [profileUser, setProfileUser] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [callLogs, setCallLogs] = useState([]);
   const {
     isSidebarOpen,
@@ -55,8 +61,11 @@ export default function ChatPage() {
     messages,
     pins,
     loadingConversation,
+    loadingOlder,
+    hasOlderMessages,
     sending,
     selectConversation,
+    loadOlderMessages,
     sendMessage,
     pinMessage,
     unpinMessage,
@@ -114,13 +123,39 @@ export default function ChatPage() {
       return;
     }
 
-    const peerName = event.peer?.displayName || event.peer?.name || event.peer?.username || 'User';
+    const peerName = event.peer?.username || event.peer?.displayName || event.peer?.name || 'User';
     if (event.reason === 'missed' || event.reason === 'rejected') {
-      pushToast(`${peerName} did not answer the call.`, 'info', 'Video call');
+      pushToast(`${peerName} did not answer the video call.`, 'info', 'Video call');
     } else if (event.reason === 'disconnected') {
       pushToast('The call was disconnected.', 'info', 'Video call');
     }
   }, [pushToast, videoCall.lastCallEvent]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      api
+        .get(`/users/search?q=${encodeURIComponent(searchQuery.trim())}`)
+        .then((response) => {
+          setSearchResults(
+            (response.data.data || []).map((contact) => ({
+              ...contact,
+              userId: contact.id || contact._id,
+              displayName: contact.username || contact.name,
+              target: contact.username || contact.email || contact.phone,
+              type: 'dm',
+            }))
+          );
+        })
+        .catch(() => setSearchResults([]));
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   const subtitle = useMemo(() => {
     if (!activeConversation) {
@@ -144,6 +179,48 @@ export default function ChatPage() {
     window.setTimeout(() => setHighlightedMessageId((current) => (current === id ? null : current)), 1500);
   };
 
+  const openUserProfile = async (target) => {
+    const id = target?.userId || target?.id;
+    if (!id) return;
+
+    setProfileLoading(true);
+    try {
+      const response = await api.get(`/users/${id}`);
+      setProfileUser(response.data.data);
+    } catch (error) {
+      pushToast(error.response?.data?.message || 'Unable to open profile', 'error');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const updateProfileAction = async (action) => {
+    if (!profileUser?.id) return;
+    setProfileLoading(true);
+    try {
+      const response = await action(profileUser.id);
+      setProfileUser(response.data.data);
+    } catch (error) {
+      pushToast(error.response?.data?.message || 'Unable to update profile', 'error');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const messageProfileUser = () => {
+    if (!profileUser) return;
+    selectConversation({
+      ...profileUser,
+      userId: profileUser.id,
+      displayName: profileUser.username || profileUser.name,
+      target: profileUser.username || profileUser.email || profileUser.phone,
+      type: 'dm',
+    });
+    setProfileUser(null);
+  };
+
+  const displayedContacts = searchQuery.trim() ? searchResults : contacts;
+
   return (
     <div className="grid h-full min-h-0 grid-cols-1 overflow-hidden lg:grid-cols-[320px_minmax(0,1fr)]">
       <aside
@@ -156,15 +233,15 @@ export default function ChatPage() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <button
-                  className={`rounded-full p-1 ${myStatuses.length ? 'bg-brand-primary' : 'bg-transparent'}`}
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border ${myStatuses.length ? 'border-brand-primary' : 'border-transparent'}`}
                   disabled={!myStatuses.length}
                   onClick={() => setMyStatusOpen(true)}
                   type="button"
                 >
-                  <Avatar name={user?.name || user?.email} src={user?.avatar} />
+                  <Avatar name={user?.username || user?.name || user?.email} src={user?.avatar} />
                 </button>
                 <div className="min-w-0">
-                  <p className="truncate text-[16px] font-medium text-text-primary">{user?.name}</p>
+                  <p className="truncate text-[16px] font-medium text-text-primary">{user?.username || user?.name}</p>
                   {user?.dndActive ? (
                     <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-brand-primary">
                       <Moon size={12} strokeWidth={1.5} />
@@ -224,14 +301,22 @@ export default function ChatPage() {
 
           <div className="border-b border-border-default px-4 py-3">
             <p className="text-[12px] font-medium uppercase tracking-[0.24em] text-text-secondary">Conversations</p>
-            <p className="mt-1 text-[13px] text-text-secondary">{contacts.length} people available</p>
-            {callLogs.length ? <p className="mt-1 text-[12px] text-text-secondary">{callLogs.length} recent calls</p> : null}
+            <label className="mt-3 flex items-center gap-2 rounded-xl border border-border-default bg-white px-3 py-2 focus-within:border-brand-primary">
+              <Search className="shrink-0 text-text-secondary" size={15} />
+              <input
+                className="min-h-9 min-w-0 flex-1 border-0 bg-transparent text-[14px] text-text-primary outline-none focus:outline-none focus:ring-0 focus-visible:outline-none"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search name, username, email, phone"
+                value={searchQuery}
+              />
+            </label>
           </div>
 
           <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3 py-3">
             <ConversationList
               activeConversation={activeConversation}
-              contacts={contacts}
+              contacts={displayedContacts}
+              onOpenProfile={openUserProfile}
               onSelect={selectConversation}
             />
           </div>
@@ -250,10 +335,12 @@ export default function ChatPage() {
                 <Menu size={18} strokeWidth={1.5} />
               </button>
               <div className="min-w-0">
+                <button className="max-w-full text-left" onClick={() => openUserProfile(activeConversation)} type="button">
                 <h2 className="truncate font-display text-[20px] font-medium leading-[1.35] text-text-primary">
-                  {activeConversation?.displayName || activeConversation?.name || activeConversation?.username || 'Your inbox'}
+                  {activeConversation?.username || activeConversation?.displayName || activeConversation?.name || 'Your inbox'}
                 </h2>
                 <p className="text-[13px] text-text-secondary">{subtitle}</p>
+                </button>
               </div>
             </div>
             {activeConversation ? (
@@ -302,13 +389,21 @@ export default function ChatPage() {
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             <PinnedBanner message={pins[0]} onViewAll={() => setPinsOpen(true)} />
 
-            <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-2 py-4 sm:px-5 sm:py-5">
+            <div
+              className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-2 py-4 sm:px-5 sm:py-5"
+              onScroll={(event) => {
+                if (event.currentTarget.scrollTop < 80 && hasOlderMessages && !loadingOlder) {
+                  loadOlderMessages();
+                }
+              }}
+            >
               {loadingConversation ? (
                 <div className="flex h-full items-center justify-center">
                   <Spinner size="lg" />
                 </div>
               ) : activeConversation ? (
                 <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-end gap-4">
+                  {loadingOlder ? <div className="self-center"><Spinner size="sm" /></div> : null}
                   {messages.map((message) => (
                     <MessageBubble
                       key={message._id || `${message.sender}-${message.createdAt}`}
@@ -422,6 +517,16 @@ export default function ChatPage() {
         onToggleCamera={videoCall.toggleCamera}
         onToggleMute={videoCall.toggleMute}
         remoteVideoRef={videoCall.remoteVideoRef}
+      />
+      <UserProfileModal
+        loading={profileLoading}
+        onBlock={() => updateProfileAction((id) => api.post(`/users/${id}/block`))}
+        onClose={() => setProfileUser(null)}
+        onFollow={() => updateProfileAction((id) => api.post(`/users/${id}/follow`))}
+        onMessage={messageProfileUser}
+        onUnblock={() => updateProfileAction((id) => api.delete(`/users/${id}/block`))}
+        onUnfollow={() => updateProfileAction((id) => api.delete(`/users/${id}/follow`))}
+        user={profileUser}
       />
     </div>
   );

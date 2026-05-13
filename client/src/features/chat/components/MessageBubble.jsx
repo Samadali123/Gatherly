@@ -22,10 +22,11 @@ export default function MessageBubble({
 }) {
   const currentUser = useAuthStore((state) => state.user);
   const isOwn = isOwnOverride ?? (message.sender === currentUser?.email || message.sender === currentUser?.username);
-  const canReply = isOwn && Boolean(onReply) && (allowReply ?? true);
-  const canPin = isOwn && Boolean(onPin) && (allowPin ?? true);
-  const canDelete = isOwn && Boolean(onDelete) && (allowDelete ?? true);
-  const canReact = !isOwn && Boolean(onReact) && (allowReact ?? true);
+  const isCallSystemMessage = message.statusContext?.type === 'call';
+  const canReply = !isCallSystemMessage && isOwn && Boolean(onReply) && (allowReply ?? true);
+  const canPin = !isCallSystemMessage && isOwn && Boolean(onPin) && (allowPin ?? true);
+  const canDelete = !isCallSystemMessage && isOwn && Boolean(onDelete) && (allowDelete ?? true);
+  const canReact = !isCallSystemMessage && !isOwn && Boolean(onReact) && (allowReact ?? true);
   const attachments = message.attachments || [];
   const topLevelGif = message.type === 'gif' && message.gifUrl
     ? [{ type: 'gif', gifUrl: message.gifUrl, previewUrl: message.previewUrl || message.gifUrl }]
@@ -149,6 +150,15 @@ export default function MessageBubble({
       id={message._id ? `message-${message._id}` : undefined}
       ref={messageRef}
     >
+      {!isOwn && message.anonymousAvatar ? (
+        <div
+          className="mr-2 mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-default text-[12px] font-semibold uppercase text-white shadow-card"
+          style={{ backgroundColor: message.anonymousAvatar.color || '#245143' }}
+          title={message.anonymousAvatar.label || 'Room participant'}
+        >
+          {(message.anonymousAvatar.label || 'GU').replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase()}
+        </div>
+      ) : null}
       <div className="relative max-w-full">
       <div
         className={`min-w-[96px] ${hasAttachments ? 'max-w-[92vw] sm:max-w-[420px]' : 'max-w-[82vw] sm:max-w-[70%]'} rounded-lg border border-border-default px-3 py-2.5 shadow-card sm:px-4 sm:py-3 ${
@@ -209,7 +219,7 @@ export default function MessageBubble({
             </div>
           </div>
         ) : null}
-        {message.msg ? <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.65]">{message.msg}</p> : null}
+        {message.msg ? <p className={`whitespace-pre-wrap break-words text-[14px] leading-[1.65] ${isCallSystemMessage ? 'text-center' : ''}`}>{message.msg}</p> : null}
         {stickerAttachments.length ? (
           <div className={`${message.msg ? 'mt-3' : ''} flex flex-wrap gap-2`}>
             {stickerAttachments.map((attachment, index) => (

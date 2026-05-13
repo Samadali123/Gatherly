@@ -110,6 +110,19 @@ export const useChatStore = create((set) => ({
         [conversationKey]: [...(state.messagesByConversation[conversationKey] || []), message],
       },
     })),
+  prependMessages: (conversationKey, messages) =>
+    set((state) => {
+      const existing = state.messagesByConversation[conversationKey] || [];
+      const existingIds = new Set(existing.map((message) => message._id).filter(Boolean));
+      const nextMessages = messages.filter((message) => !message._id || !existingIds.has(message._id));
+
+      return {
+        messagesByConversation: {
+          ...state.messagesByConversation,
+          [conversationKey]: [...nextMessages, ...existing],
+        },
+      };
+    }),
   updateMessage: (conversationKey, messageId, updater) =>
     set((state) => ({
       messagesByConversation: {

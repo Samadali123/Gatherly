@@ -1,21 +1,29 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useUiStore } from '../../features/chat/chatStore';
 import Toast from '../components/Toast';
+import { applyTheme, getStoredThemeMode } from '../theme';
 
 export default function AppLayout() {
   const { toasts, dismissToast } = useUiStore();
   const { logout } = useAuth();
   const location = useLocation();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState(getStoredThemeMode);
   const navItems = [
     { label: 'Chat', to: '/chat' },
     { label: 'Rooms', to: '/rooms/new' },
     { label: 'Status', to: '/status' },
     { label: 'Notifications', to: '/settings/notifications' },
   ];
+
+  const toggleTheme = () => {
+    const nextMode = themeMode === 'dark' ? 'light' : 'dark';
+    setThemeMode(nextMode);
+    applyTheme(nextMode);
+  };
 
   return (
     <div className="h-dvh overflow-hidden bg-transparent">
@@ -46,7 +54,15 @@ export default function AppLayout() {
                   );
                 })}
                 <button
-                  className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary transition hover:border-brand-primary hover:text-brand-primary sm:min-h-11 sm:min-w-11"
+                  className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-border-default bg-bg-primary text-text-secondary transition hover:border-brand-primary hover:text-brand-primary sm:min-h-11 sm:min-w-11"
+                  onClick={toggleTheme}
+                  title={themeMode === 'dark' ? 'Use light mode' : 'Use dark mode'}
+                  type="button"
+                >
+                  {themeMode === 'dark' ? <Sun size={16} strokeWidth={1.7} /> : <Moon size={16} strokeWidth={1.7} />}
+                </button>
+                <button
+                  className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-border-default bg-bg-primary text-text-secondary transition hover:border-brand-primary hover:text-brand-primary sm:min-h-11 sm:min-w-11"
                   onClick={() => setLogoutConfirmOpen(true)}
                   type="button"
                 >

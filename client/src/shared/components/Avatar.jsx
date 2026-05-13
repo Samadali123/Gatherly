@@ -1,14 +1,13 @@
-import OnlineDot from './OnlineDot';
+const initialsFromName = (name = '') => {
+  const compact = String(name || '').replace(/[^a-zA-Z0-9]/g, '');
+  if (compact) {
+    return compact.slice(0, 2).toUpperCase();
+  }
 
-const initialsFromName = (name = '') =>
-  name
-    .split(/[\s@._-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((chunk) => chunk[0]?.toUpperCase())
-    .join('') || 'G';
+  return 'GA';
+};
 
-export default function Avatar({ name, src, online = false, size = 'md' }) {
+export default function Avatar({ name, src, size = 'md' }) {
   const sizeMap = {
     sm: 'h-9 w-9 text-xs',
     md: 'h-11 w-11 text-sm',
@@ -16,12 +15,12 @@ export default function Avatar({ name, src, online = false, size = 'md' }) {
   };
 
   return (
-    <div className="relative inline-flex shrink-0">
+    <div className="relative flex shrink-0 items-center justify-center leading-none">
       {src ? (
         <img
           src={src}
           alt={name || 'Avatar'}
-          className={`${sizeMap[size]} rounded-full border border-border-default object-cover shadow-card`}
+          className={`${sizeMap[size]} block rounded-full border border-border-default object-cover shadow-card`}
         />
       ) : (
         <div
@@ -30,9 +29,6 @@ export default function Avatar({ name, src, online = false, size = 'md' }) {
           {initialsFromName(name)}
         </div>
       )}
-      <div className="absolute -bottom-0.5 -right-0.5">
-        <OnlineDot online={online} />
-      </div>
     </div>
   );
 }

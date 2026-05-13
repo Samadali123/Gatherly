@@ -5,6 +5,7 @@ const authenticate = require('../middlewares/auth.middleware');
 const { createRateLimiter } = require('../middlewares/rateLimit.middleware');
 const {
   forgotPasswordSchema,
+  googleSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
@@ -17,6 +18,8 @@ const passwordResetLimiter = createRateLimiter({ max: 5, windowMs: 60 * 60 * 100
 
 router.post('/register', authLimiter, validate(registerSchema), authController.register);
 router.post('/login', authLimiter, validate(loginSchema), authController.login);
+router.get('/google/config', authController.googleConfig);
+router.post('/google', authLimiter, validate(googleSchema), authController.google);
 router.post('/refresh', authLimiter, authController.refresh);
 router.post('/forgot-password', passwordResetLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
 router.get('/validate-reset-token', validate(validateResetTokenSchema, 'query'), authController.validateResetToken);

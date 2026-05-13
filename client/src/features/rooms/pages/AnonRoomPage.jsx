@@ -43,6 +43,9 @@ export default function AnonRoomPage() {
   const canKick = Boolean(user?.id && roomCreatorId && String(roomCreatorId) === String(user.id));
   const canUseMeetings = user?.role === 'professional';
   const passwordRequired = Boolean(room?.requiresPassword);
+  const roomEnded = Boolean(room?.expiresAt && new Date(room.expiresAt).getTime() <= now);
+  const canOpenMeeting = Boolean(canUseMeetings && session?.sessionId && !roomEnded && (canKick || meetingState.active));
+  const roomEndedMessage = 'Time ended for this room. Sorry, nobody can chat here now.';
 
   useEffect(() => {
     let active = true;
@@ -161,7 +164,13 @@ export default function AnonRoomPage() {
     });
 
     anonSocket.on('room:expired', () => {
-      pushToast('This room has expired', 'error');
+      setRoom((current) => (current ? { ...current, isActive: false, expiresAt: current.expiresAt || new Date().toISOString() } : current));
+      setMeetingOpen(false);
+      pushToast(roomEndedMessage, 'error');
+    });
+
+    anonSocket.on('room:error', ({ message }) => {
+      pushToast(message || 'Unable to complete this room action.', 'error');
     });
 
     anonSocket.on('room:deleted', ({ message }) => {
@@ -244,8 +253,8 @@ export default function AnonRoomPage() {
   };
 
   const uploadAnonAttachments = async ({ type, files }) => {
-    if (kicked) {
-      pushToast('You are no longer in this room.', 'error');
+    if (kicked || roomEnded) {
+      pushToast(kicked ? 'You are no longer in this room.' : roomEndedMessage, 'error');
       throw new Error('Kicked from room');
     }
 
@@ -265,8 +274,8 @@ export default function AnonRoomPage() {
   };
 
   const sendAnonMessage = async (content, attachments = [], parentMessageId = null) => {
-    if (kicked) {
-      pushToast('You are no longer in this room.', 'error');
+    if (kicked || roomEnded) {
+      pushToast(kicked ? 'You are no longer in this room.' : roomEndedMessage, 'error');
       return;
     }
 
@@ -274,8 +283,8 @@ export default function AnonRoomPage() {
   };
 
   const createAnonPoll = async ({ question, options }) => {
-    if (kicked) {
-      pushToast('You are no longer in this room.', 'error');
+    if (kicked || roomEnded) {
+      pushToast(kicked ? 'You are no longer in this room.' : roomEndedMessage, 'error');
       return;
     }
 
@@ -283,8 +292,8 @@ export default function AnonRoomPage() {
   };
 
   const voteAnonPoll = async (pollId, optionId) => {
-    if (kicked) {
-      pushToast('You are no longer in this room.', 'error');
+    if (kicked || roomEnded) {
+      pushToast(kicked ? 'You are no longer in this room.' : roomEndedMessage, 'error');
       return;
     }
 
@@ -292,8 +301,8 @@ export default function AnonRoomPage() {
   };
 
   const reactToMessage = (message, emoji) => {
-    if (kicked) {
-      pushToast('You are no longer in this room.', 'error');
+    if (kicked || roomEnded) {
+      pushToast(kicked ? 'You are no longer in this room.' : roomEndedMessage, 'error');
       return;
     }
 
@@ -301,8 +310,8 @@ export default function AnonRoomPage() {
   };
 
   const pinMessage = (message) => {
-    if (kicked) {
-      pushToast('You are no longer in this room.', 'error');
+    if (kicked || roomEnded) {
+      pushToast(kicked ? 'You are no longer in this room.' : roomEndedMessage, 'error');
       return;
     }
 
@@ -332,6 +341,7 @@ export default function AnonRoomPage() {
     ...message,
     msg: message.content,
     sender: message.sessionId,
+    anonymousAvatar: { color: message.avatarColor, label: message.alias || message.avatarAnimal },
   });
 
   const focusOriginalMessage = (messageId) => {
@@ -388,7 +398,7 @@ export default function AnonRoomPage() {
           </div>
           <div className="scrollbar-chat -mx-1 flex max-w-full flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-1 lg:justify-end lg:pb-0">
             <span className="rounded-full border border-border-default bg-brand-subtle px-3 py-2 text-[12px] font-medium uppercase tracking-[0.14em] text-text-secondary">
-              {roomCountdown}
+              {roomEnded ? 'Ended' : roomCountdown}
             </span>
             <Link className="rounded-full border border-border-default bg-white px-4 py-2 text-[13px] font-medium text-text-secondary hover:border-brand-primary hover:text-brand-primary" to="/chat">
               Chat
@@ -396,7 +406,7 @@ export default function AnonRoomPage() {
             <Link className="rounded-full border border-brand-primary bg-brand-subtle px-4 py-2 text-[13px] font-medium text-brand-primary" to="/rooms/new">
               Rooms
             </Link>
-            {canUseMeetings && session?.sessionId && (canKick || meetingState.active) ? (
+            {canOpenMeeting ? (
               <button
                 className="rounded-full bg-brand-primary px-4 py-2 text-[13px] font-medium text-white"
                 onClick={() => {
@@ -405,7 +415,7 @@ export default function AnonRoomPage() {
                 }}
                 type="button"
               >
-                {canKick ? (meetingState.active ? 'Open meeting' : 'Meeting') : 'Join meeting'}
+                {canKick ? 'Start meeting' : 'Join meeting'}
               </button>
             ) : null}
             {session?.sessionId && !kicked ? (
@@ -449,6 +459,11 @@ export default function AnonRoomPage() {
               You are no longer in this room.
             </div>
           ) : null}
+          {roomEnded ? (
+            <div className="shrink-0 border-b border-[#f2cec1] bg-[#fff4ef] px-5 py-3 text-[14px] font-medium text-[#7c2d12]">
+              {roomEndedMessage}
+            </div>
+          ) : null}
           {pins[0] ? (
           <div className="shrink-0 border-b border-border-default px-5 py-4">
               <button
@@ -473,7 +488,7 @@ export default function AnonRoomPage() {
                       className="flex min-h-11 w-full items-center justify-between rounded-xl border border-border-default bg-bg-secondary px-3 py-2 text-left text-[14px] text-text-primary transition hover:border-brand-primary hover:bg-brand-subtle"
                       key={option.id}
                       onClick={() => voteAnonPoll(poll.id || poll._id, option.id)}
-                      disabled={kicked}
+                      disabled={kicked || roomEnded}
                       type="button"
                     >
                       <span>{option.text}</span>
@@ -509,7 +524,7 @@ export default function AnonRoomPage() {
           <div className="shrink-0 border-t border-border-default bg-bg-primary">
             <div className="mx-auto max-w-3xl">
               <ChatInput
-                disabled={kicked || !session}
+                disabled={kicked || roomEnded || !session}
                 onCreatePoll={createAnonPoll}
                 onSend={(content, attachments) => sendAnonMessage(content, attachments)}
                 onUploadAttachments={uploadAnonAttachments}

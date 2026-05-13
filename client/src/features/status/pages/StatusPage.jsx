@@ -131,7 +131,7 @@ export default function StatusPage() {
           onClick={() => mine.length ? setViewer({ groups: allStoryGroups }) : null}
           type="button"
         >
-          <div className={`rounded-full p-1 ${mine.length ? 'bg-brand-primary' : 'bg-border-default'}`}>
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border ${mine.length ? 'border-brand-primary' : 'border-transparent'}`}>
             <Avatar name="Me" src={mine[0]?.userId?.avatar || mine[0]?.userId?.profileImage} />
           </div>
           <div className="min-w-0 flex-1">
@@ -304,7 +304,7 @@ export default function StatusPage() {
               }}
               type="button"
             >
-              <div className="rounded-full bg-brand-primary p-1">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-brand-primary">
                 <Avatar name={group.user?.name || group.user?.username} src={group.user?.avatar || group.user?.profileImage} />
               </div>
               <div className="min-w-0 flex-1">

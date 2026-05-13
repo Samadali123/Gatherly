@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ButtonSpinner from '../../../shared/components/ButtonSpinner';
 
-export default function LoginForm({ error, onSubmit, loading }) {
+export default function LoginForm({ error, onRoleChange, onSubmit, loading }) {
   const [form, setForm] = useState({
-    email: '',
+    identifier: '',
     password: '',
     role: 'personal',
   });
@@ -12,18 +12,13 @@ export default function LoginForm({ error, onSubmit, loading }) {
 
   const submit = () => {
     const nextForm = {
-      email: form.email.trim(),
+      identifier: form.identifier.trim(),
       password: form.password,
       role: form.role,
     };
 
-    if (!nextForm.email) {
-      setLocalError('Please enter your email address.');
-      return;
-    }
-
-    if (!/^\S+@\S+\.\S+$/.test(nextForm.email)) {
-      setLocalError('Please enter a valid email address.');
+    if (!nextForm.identifier) {
+      setLocalError('Please enter your email or mobile number.');
       return;
     }
 
@@ -50,14 +45,14 @@ export default function LoginForm({ error, onSubmit, loading }) {
         </div>
       ) : null}
       <div>
-        <label className="mb-2 block text-[14px] font-medium text-text-secondary">Email</label>
+        <label className="mb-2 block text-[14px] font-medium text-text-secondary">Email or mobile number</label>
         <input
           className="w-full rounded-xl border border-border-default bg-white px-4 py-3 text-[14px] text-text-primary transition"
-          onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-          placeholder="samad@example.com"
-          autoComplete="email"
-          type="email"
-          value={form.email}
+          onChange={(event) => setForm((current) => ({ ...current, identifier: event.target.value }))}
+          placeholder="gatherly@gmail.com or +91 9893005689"
+          autoComplete="username"
+          type="text"
+          value={form.identifier}
         />
       </div>
       <div>
@@ -86,7 +81,10 @@ export default function LoginForm({ error, onSubmit, loading }) {
             <button
               className={`min-h-11 rounded-lg text-[13px] font-medium ${form.role === option.value ? 'bg-brand-primary text-white' : 'bg-white text-text-secondary'}`}
               key={option.value}
-              onClick={() => setForm((current) => ({ ...current, role: option.value }))}
+              onClick={() => {
+                setForm((current) => ({ ...current, role: option.value }));
+                onRoleChange?.(option.value);
+              }}
               type="button"
             >
               {option.label}

@@ -6,7 +6,9 @@ const modelMap = {
   anonParticipant: 'anonParticipant',
   anonPoll: 'anonPoll',
   anonRoom: 'anonRoom',
+  block: 'block',
   call: 'call',
+  follow: 'follow',
   group: 'group',
   message: 'message',
   password_reset_token: 'passwordResetToken',
@@ -95,6 +97,7 @@ const transformCondition = (field, value) => {
         : { [field]: { not: idOf(value.$ne) } };
     }
     if ('$gt' in value) return { [field]: { gt: value.$gt } };
+    if ('$lt' in value) return { [field]: { lt: value.$lt } };
     if ('$lte' in value) return { [field]: { lte: value.$lte } };
     if ('$regex' in value) return { [field]: { contains: value.$regex, mode: value.$options?.includes('i') ? 'insensitive' : 'default' } };
   }
@@ -159,6 +162,11 @@ class Query {
 
   limit(value) {
     this.args.take = value;
+    return this;
+  }
+
+  skip(value) {
+    this.args.skip = value;
     return this;
   }
 

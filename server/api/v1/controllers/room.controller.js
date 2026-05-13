@@ -4,7 +4,7 @@ const meetingService = require('../../../services/meetingService');
 const userService = require('../../../services/userService');
 const cacheService = require('../../../services/cacheService');
 const config = require('../../../configs');
-const { emitToSocket } = require('../../../sockets/emitter');
+const { emitToAll, emitToSocket } = require('../../../sockets/emitter');
 const { endMeeting, getMeeting, publicMeeting } = require('../../../sockets/roomMeetingStore');
 const { sendError, sendSuccess } = require('../../../utils/response');
 const { REFRESH_COOKIE_OPTIONS } = require('../../../utils/cookies');
@@ -32,6 +32,14 @@ const createRoom = async (req, res, next) => {
       maxAge: REFRESH_COOKIE_OPTIONS.maxAge,
     });
     cacheService.delByPrefix('http:user:').catch(() => {});
+    emitToAll('room:created', {
+      code: room.code,
+      name: room.name,
+      expiresAt: room.expiresAt,
+      maxParticipants: room.maxParticipants,
+      participantCount: 1,
+      requiresPassword: Boolean(room.passwordHash),
+    });
 
     return sendSuccess(
       res,
@@ -127,6 +135,8 @@ const listParticipants = async (req, res, next) => {
       return sendError(res, 'You do not have permission to perform this action', 403);
     }
 
+    const room = await roomService.findRoomByCode(req.params.code);
+    roomService.assertRoomActive(room);
     await roomService.requireActiveParticipant({ roomCode: req.params.code, sessionId: req.anonUser.sessionId });
     const participants = await roomService.listParticipants(req.params.code);
     return sendSuccess(res, participants, 'Participants fetched');
@@ -286,8 +296,8 @@ const createMeetingToken = async (req, res, next) => {
     const livekitRoom = meetingService.getLiveKitRoomName(room.code);
     const token = meetingService.createMeetingToken({
       roomName: livekitRoom,
-      identity: user._id.toString(),
-      name: user.name || user.username,
+      identity: req.anonUser.sessionId,
+      name: req.anonUser.alias || user.name || user.username,
       role,
     });
 

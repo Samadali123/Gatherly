@@ -9,12 +9,22 @@ export default function ParticipantList({ currentSessionId, canKick, onKick, par
     <div className="space-y-3">
       {sortedParticipants.map((participant) => {
         const isMe = participant.sessionId === currentSessionId;
+        const label = participant.alias || 'Anonymous guest';
+        const avatarLabel = (participant.avatarAnimal || label).replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase() || 'G';
 
         return (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-border-default bg-bg-secondary px-4 py-3" key={participant.sessionId}>
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-medium text-text-primary">{isMe ? 'Me' : participant.alias}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold text-white shadow-card"
+              style={{ backgroundColor: participant.avatarColor || '#245143' }}
+            >
+              {avatarLabel}
+            </div>
+            <div className="min-w-0">
+            <p className="truncate text-[14px] font-medium text-text-primary">{isMe ? `Me (${label})` : label}</p>
             <p className="text-[12px] text-text-secondary">{participant.isOnline ? 'Online now' : 'Offline'}</p>
+            </div>
           </div>
           {canKick && !isMe ? (
             <button

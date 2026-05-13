@@ -48,6 +48,13 @@ const requireRoomParticipant = async (socket) => {
   return participant;
 };
 
+const emitRoomActionError = (socket, error) => {
+  const message = error?.statusCode === 410
+    ? 'Time ended for this room. Sorry, nobody can chat here now.'
+    : error?.message || 'Unable to complete this room action.';
+  socket.emit('room:error', { message });
+};
+
 const registerRoomHandlers = (io, socket) => {
   if (socket.authType !== 'anon') {
     return;
@@ -65,6 +72,7 @@ const registerRoomHandlers = (io, socket) => {
       const message = await roomService.createAnonMessage({ room, participant, content, parentMessageId, attachments });
       emitToSocket(`anon:${room.code}`, 'room:message:new', roomService.serializeAnonMessage(message));
     } catch (error) {
+      emitRoomActionError(socket, error);
       logger.error(`room:message:send failed: ${error.message}`);
     }
   });
@@ -90,6 +98,7 @@ const registerRoomHandlers = (io, socket) => {
         emitToSocket(`anon:${socket.anonUser.roomCode}`, 'room:message:updated', message);
       }
     } catch (error) {
+      emitRoomActionError(socket, error);
       logger.error(`room:message:react failed: ${error.message}`);
     }
   });
@@ -110,6 +119,7 @@ const registerRoomHandlers = (io, socket) => {
         emitToSocket(`anon:${socket.anonUser.roomCode}`, 'room:message:updated', message);
       }
     } catch (error) {
+      emitRoomActionError(socket, error);
       logger.error(`room:message:pin failed: ${error.message}`);
     }
   });
@@ -130,6 +140,7 @@ const registerRoomHandlers = (io, socket) => {
         emitToSocket(`anon:${socket.anonUser.roomCode}`, 'room:message:updated', message);
       }
     } catch (error) {
+      emitRoomActionError(socket, error);
       logger.error(`room:message:unpin failed: ${error.message}`);
     }
   });
@@ -152,6 +163,7 @@ const registerRoomHandlers = (io, socket) => {
 
       emitToSocket(`anon:${room.code}`, 'room:poll:new', poll);
     } catch (error) {
+      emitRoomActionError(socket, error);
       logger.error(`room:poll:create failed: ${error.message}`);
     }
   });
@@ -173,6 +185,7 @@ const registerRoomHandlers = (io, socket) => {
         emitToSocket(`anon:${socket.anonUser.roomCode}`, 'room:poll:updated', poll);
       }
     } catch (error) {
+      emitRoomActionError(socket, error);
       logger.error(`room:poll:vote failed: ${error.message}`);
     }
   });
@@ -265,6 +278,40 @@ const registerRoomHandlers = (io, socket) => {
     meeting.pending.delete(sessionId);
     emitToSocket(`anon:${socket.anonUser.roomCode}`, 'room:meeting:state', publicMeeting(meeting));
     emitToSocket(`anon:${socket.anonUser.roomCode}`, 'room:meeting:denied', { sessionId, roomCode: socket.anonUser.roomCode });
+  });
+
+  const emitHostControl = async ({ sessionId, event }) => {
+    if (!(await requireRoomParticipant(socket))) {
+      return;
+    }
+
+    const meeting = getMeeting(socket.anonUser.roomCode);
+    const target = meeting?.activeParticipants?.get(sessionId);
+
+    if (!meeting || meeting.hostSessionId !== socket.anonUser.sessionId || !target?.socketId) {
+      return;
+    }
+
+    io.to(target.socketId).emit(event, {
+      sessionId,
+      roomCode: socket.anonUser.roomCode,
+    });
+  };
+
+  socket.on('room:meeting:force-mute', ({ sessionId }) => {
+    emitHostControl({ sessionId, event: 'room:meeting:force-muted' });
+  });
+
+  socket.on('room:meeting:force-camera-off', ({ sessionId }) => {
+    emitHostControl({ sessionId, event: 'room:meeting:force-camera-off' });
+  });
+
+  socket.on('room:meeting:remove-participant', async ({ sessionId }) => {
+    await emitHostControl({ sessionId, event: 'room:meeting:removed' });
+    const departed = removeMeetingParticipant(socket.anonUser.roomCode, sessionId);
+    if (departed) {
+      notifyParticipantLeft(io, departed.meeting, departed.participant);
+    }
   });
 
   socket.on('room:meeting:end', async () => {
