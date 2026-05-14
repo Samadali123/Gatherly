@@ -1,11 +1,28 @@
-const trimTrailingSlash = (value) => value.replace(/\/+$/, '');
+const trimTrailingSlash = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\/+$/, "");
 
-export const API_BASE_URL = trimTrailingSlash(
-   import.meta.env.REACT_APP_API_BASE_URL || '/api/v1'
-);
+const withApiPath = (value) => {
+  const baseUrl = trimTrailingSlash(value);
+  if (!baseUrl) {
+    return "/api/v1";
+  }
+
+  return baseUrl.endsWith("/api/v1") ? baseUrl : `${baseUrl}/api/v1`;
+};
+
+const rawApiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL || "";
+
+export const API_BASE_URL = rawApiBaseUrl
+  ? withApiPath(rawApiBaseUrl)
+  : "/api/v1";
 
 const resolveSocketUrl = () => {
-  const configuredSocketUrl = import.meta.env.REACT_APP_SOCKET_URL;
+  const configuredSocketUrl =
+    import.meta.env.VITE_SOCKET_URL || '';
+
   if (configuredSocketUrl) {
     return trimTrailingSlash(configuredSocketUrl);
   }
@@ -14,7 +31,7 @@ const resolveSocketUrl = () => {
     const apiUrl = new URL(API_BASE_URL);
     return apiUrl.origin;
   } catch {
-    return '/';
+    return "/";
   }
 };
 

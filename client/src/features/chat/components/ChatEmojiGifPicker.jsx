@@ -199,7 +199,7 @@ export default function ChatEmojiGifPicker({ anchorEl, onClose, onGifSelect, onS
           <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3" onScroll={handleScroll} ref={gridRef}>
             {!apiKey ? (
               <div className="rounded-lg bg-brand-subtle px-3 py-4 text-center text-[13px] leading-[1.5] text-text-primary">
-                Add REACT_APP_GIPHY_API_KEY to .env to enable GIF search.
+                Add Giphy Api key
               </div>
             ) : null}
             <div className="grid grid-cols-2 gap-1">

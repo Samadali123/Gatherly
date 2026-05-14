@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
   return {
     define: {
       'import.meta.env.REACT_APP_GIPHY_API_KEY': JSON.stringify(env.REACT_APP_GIPHY_API_KEY || ''),
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL || ''),
+      'import.meta.env.VITE_SOCKET_URL': JSON.stringify(env.VITE_SOCKET_URL || ''),
     },
     plugins: [react()],
     build: {
