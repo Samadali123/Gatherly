@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { getEmojiPickerPosition } from '../utils/emojiPickerPosition';
 import { buildGiphyUrl, getNextGiphyOffset, mapGiphyGif } from '../utils/giphyGif';
 
-const apiKey = import.meta.env.REACT_APP_GIPHY_API_KEY || '';
+const apiKey = import.meta.env.VITE_GIPHY_API_KEY || '';
 
 export default function GifPicker({ anchorEl, onClose, onSelect, open }) {
   const pickerRef = useRef(null);
