@@ -1,4 +1,4 @@
-import{j as e}from"./vendor-tldraw-C2e0XBpf.js";import{d as t,L as r}from"./index-kL8VuzsF.js";import"./vendor-emoji-DezT_5La.js";/**
+import{j as e}from"./vendor-tldraw-C2e0XBpf.js";import{d as t,L as r}from"./index-BUNISx8d.js";import"./vendor-emoji-DezT_5La.js";/**
  * @license lucide-react v1.14.0 - ISC
  *
  * This source code is licensed under the ISC license.

@@ -72,7 +72,6 @@ export default function LoginForm({ error, onRoleChange, onSubmit, loading }) {
         </div>
       </div>
       <div>
-        <label className="mb-2 block text-[14px] font-medium text-text-secondary">Open as</label>
         <div className="grid grid-cols-2 gap-2 rounded-xl border border-border-default bg-bg-secondary p-1">
           {[
             { value: 'personal', label: 'Personal' },

@@ -2,9 +2,10 @@ import axios from 'axios';
 import { useAuthStore } from '../features/auth/authStore';
 import { clearStoredRefreshToken, getStoredRefreshToken, setStoredRefreshToken } from '../features/auth/tokenStorage';
 import { disconnectSocket, setSocketRefreshHandler } from './socket';
+import { API_BASE_URL } from './runtimeConfig';
 
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE_URL,
 });
 
 let isRefreshing = false;
@@ -37,7 +38,7 @@ export const refreshAccessToken = async () => {
       throw error;
     }
 
-    const response = await axios.post('/api/v1/auth/refresh', { refreshToken });
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
 
     const accessToken = response.data?.data?.accessToken || null;
     const newRefreshToken = response.data?.data?.refreshToken || null;

@@ -84,7 +84,6 @@ export default function RegisterForm({ error, onRoleChange, onSubmit, loading })
         />
       </div>
       <div>
-        <label className="mb-2 block text-[14px] font-medium text-text-secondary">Use case</label>
         <div className="grid grid-cols-2 gap-2 rounded-xl border border-border-default bg-bg-secondary p-1">
           {[
             { value: 'personal', label: 'Personal' },

@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import { useAuthStore } from '../features/auth/authStore';
+import { SOCKET_URL } from './runtimeConfig';
 
 let socket;
 let refreshHandler = null;
@@ -10,7 +11,7 @@ export const setSocketRefreshHandler = (handler) => {
 
 const getSocket = () => {
   if (!socket) {
-    socket = io('/', {
+    socket = io(SOCKET_URL, {
       autoConnect: false,
       transports: ['websocket'],
     });

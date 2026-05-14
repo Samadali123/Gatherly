@@ -27,7 +27,7 @@ export default function AuthLayout() {
   return (
     <div className="min-h-dvh bg-bg-secondary px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
       <div className="mx-auto grid min-h-[calc(100dvh-24px)] w-full max-w-6xl overflow-hidden rounded-xl border border-border-default bg-bg-primary shadow-card sm:min-h-[calc(100dvh-48px)] lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
-        <section className="relative flex min-h-[300px] flex-col justify-between overflow-hidden bg-[#245143] p-5 text-white sm:min-h-[360px] sm:p-8 lg:min-h-full lg:p-10">
+        <section className="relative hidden min-h-[300px] flex-col justify-between overflow-hidden bg-[#245143] p-5 text-white sm:min-h-[360px] sm:p-8 lg:flex lg:min-h-full lg:p-10">
           <div className="relative z-10">
             <p className="text-[12px] font-medium uppercase tracking-[0.3em] text-white/70">Gatherly</p>
             <h1 className="mt-4 max-w-xl font-display text-[28px] font-medium leading-[1.15] sm:text-[42px]">

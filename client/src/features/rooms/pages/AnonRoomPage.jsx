@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../../../services/api';
+import { SOCKET_URL } from '../../../services/runtimeConfig';
 import Spinner from '../../../shared/components/Spinner';
 import { useAuthStore } from '../../auth/authStore';
 import ChatInput from '../../chat/components/ChatInput';
@@ -110,7 +111,7 @@ export default function AnonRoomPage() {
       return undefined;
     }
 
-    const anonSocket = io('/', {
+    const anonSocket = io(SOCKET_URL, {
       transports: ['websocket'],
       auth: {
         sessionId: session.sessionId,
