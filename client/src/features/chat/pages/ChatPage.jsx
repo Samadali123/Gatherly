@@ -11,7 +11,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../../services/api';
 import Avatar from '../../../shared/components/Avatar';
@@ -45,6 +45,8 @@ export default function ChatPage() {
   const [profileUser, setProfileUser] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [callLogs, setCallLogs] = useState([]);
+  const conversationScrollRef = useRef(null);
+  const loadingOlderRef = useRef(false);
   const {
     isSidebarOpen,
     setSidebarOpen,
@@ -81,7 +83,11 @@ export default function ChatPage() {
 
   useSocket({
     currentConversationKey: activeConversation?.key,
-    currentReceiver: activeConversation?.name || activeConversation?.username,
+    currentReceiver:
+      activeConversation?.target ||
+      activeConversation?.username ||
+      activeConversation?.phone ||
+      activeConversation?.name,
   });
 
   useEffect(() => {
@@ -146,7 +152,7 @@ export default function ChatPage() {
               ...contact,
               userId: contact.id || contact._id,
               displayName: contact.username || contact.name,
-              target: contact.username || contact.email || contact.phone,
+              target: contact.username || contact.phone || contact.name,
               type: 'dm',
             }))
           );
@@ -213,13 +219,32 @@ export default function ChatPage() {
       ...profileUser,
       userId: profileUser.id,
       displayName: profileUser.username || profileUser.name,
-      target: profileUser.username || profileUser.email || profileUser.phone,
+      target: profileUser.username || profileUser.phone || profileUser.name,
       type: 'dm',
     });
     setProfileUser(null);
   };
 
   const displayedContacts = searchQuery.trim() ? searchResults : contacts;
+
+  const handleConversationScroll = async (event) => {
+    const node = event.currentTarget;
+
+    if (node.scrollTop >= 96 || !hasOlderMessages || loadingOlder || loadingOlderRef.current) {
+      return;
+    }
+
+    loadingOlderRef.current = true;
+    const previousHeight = node.scrollHeight;
+    const previousTop = node.scrollTop;
+    await loadOlderMessages();
+    window.requestAnimationFrame(() => {
+      if (conversationScrollRef.current === node) {
+        node.scrollTop = node.scrollHeight - previousHeight + previousTop;
+      }
+      loadingOlderRef.current = false;
+    });
+  };
 
   return (
     <div className="grid h-full min-h-0 grid-cols-1 overflow-hidden lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -238,7 +263,7 @@ export default function ChatPage() {
                   onClick={() => setMyStatusOpen(true)}
                   type="button"
                 >
-                  <Avatar name={user?.username || user?.name || user?.email} src={user?.avatar} />
+                  <Avatar name={user?.username || user?.name || user?.email} src={user?.avatar || user?.profileImage} />
                 </button>
                 <div className="min-w-0">
                   <p className="truncate text-[16px] font-medium text-text-primary">{user?.username || user?.name}</p>
@@ -306,7 +331,7 @@ export default function ChatPage() {
               <input
                 className="min-h-9 min-w-0 flex-1 border-0 bg-transparent text-[14px] text-text-primary outline-none focus:outline-none focus:ring-0 focus-visible:outline-none"
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search name, username, email, phone"
+                placeholder="Search username or mobile number"
                 value={searchQuery}
               />
             </label>
@@ -391,11 +416,8 @@ export default function ChatPage() {
 
             <div
               className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-2 py-4 sm:px-5 sm:py-5"
-              onScroll={(event) => {
-                if (event.currentTarget.scrollTop < 80 && hasOlderMessages && !loadingOlder) {
-                  loadOlderMessages();
-                }
-              }}
+              onScroll={handleConversationScroll}
+              ref={conversationScrollRef}
             >
               {loadingConversation ? (
                 <div className="flex h-full items-center justify-center">
@@ -486,11 +508,7 @@ export default function ChatPage() {
             className="w-full max-w-sm rounded-xl border border-border-default bg-bg-primary p-6 text-center shadow-[0_24px_80px_rgba(0,0,0,0.24)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <img
-              alt={user?.name || 'Profile'}
-              className="mx-auto h-28 w-28 rounded-full border border-border-default object-cover shadow-card"
-              src={user?.avatar || user?.profileImage}
-            />
+            <Avatar name={user?.username || user?.name || user?.email} src={user?.avatar || user?.profileImage} size="xl" />
             <h3 className="mt-4 truncate font-display text-[24px] font-medium text-text-primary">{user?.name || 'Your profile'}</h3>
             <p className="mt-1 truncate text-[14px] text-text-secondary">@{user?.username}</p>
             {user?.bio ? <p className="mt-4 text-[14px] leading-[1.6] text-text-primary">{user.bio}</p> : null}

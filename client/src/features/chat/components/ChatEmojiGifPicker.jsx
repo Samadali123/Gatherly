@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getEmojiPickerPosition } from '../utils/emojiPickerPosition';
 import { buildGiphyUrl, getNextGiphyOffset, mapGiphyGif } from '../utils/giphyGif';
+import Spinner from '../../../shared/components/Spinner';
 
-const apiKey = import.meta.env.VITE_GIPHY_API_KEY || '';
+const apiKey = import.meta.env.VITE_GIPHY_API_KEY || import.meta.env.REACT_APP_GIPHY_API_KEY || '';
 
 export default function ChatEmojiGifPicker({ anchorEl, onClose, onGifSelect, onStickerSelect, open, tab, triggerEl, onTabChange }) {
   const pickerRef = useRef(null);
@@ -180,10 +181,10 @@ export default function ChatEmojiGifPicker({ anchorEl, onClose, onGifSelect, onS
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="p-3">
-            <label className="flex min-h-11 items-center gap-2 rounded-full border border-border-default bg-bg-secondary px-3 text-text-secondary">
+            <label className="flex min-h-11 items-center gap-2 rounded-full border border-border-default bg-bg-secondary px-3 text-text-secondary focus-within:border-brand-primary/50">
               <Search size={16} strokeWidth={1.5} />
               <input
-                className="min-w-0 flex-1 bg-transparent text-[14px] text-text-primary placeholder:text-text-secondary"
+                className="gatherly-borderless-input min-w-0 flex-1 border-0 bg-transparent text-[14px] text-text-primary outline-none placeholder:text-text-secondary focus:border-0 focus:outline-none focus:ring-0"
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search GIFs..."
                 value={query}
@@ -202,6 +203,16 @@ export default function ChatEmojiGifPicker({ anchorEl, onClose, onGifSelect, onS
                 Add Giphy Api key
               </div>
             ) : null}
+            {loading && !gifs.length ? (
+              <div className="flex h-32 items-center justify-center">
+                <Spinner size="sm" />
+              </div>
+            ) : null}
+            {!loading && apiKey && !gifs.length ? (
+              <div className="rounded-lg bg-bg-secondary px-3 py-4 text-center text-[13px] leading-[1.5] text-text-secondary">
+                No GIFs found.
+              </div>
+            ) : null}
             <div className="grid grid-cols-2 gap-1">
               {gifs.map((gif) => (
                 <button
@@ -218,7 +229,7 @@ export default function ChatEmojiGifPicker({ anchorEl, onClose, onGifSelect, onS
                   <img alt={gif.alt} className="h-28 w-full object-cover" loading="lazy" src={hoveredId === gif.id ? gif.previewUrl : gif.posterUrl} />
                 </button>
               ))}
-              {loading
+              {loading && gifs.length
                 ? Array.from({ length: 6 }).map((_, index) => (
                     <span className="h-28 animate-pulse rounded-md bg-bg-tertiary" key={`skeleton-${index}`} />
                   ))

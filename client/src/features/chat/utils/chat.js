@@ -9,8 +9,8 @@ export const getConversationChatId = (conversation, currentUser) => {
     return conversation._id || conversation.chatId || null;
   }
 
-  const receiver = conversation.username || conversation.email || conversation.name;
-  const sender = currentUser?.username || currentUser?.email;
+  const receiver = conversation.target || conversation.username || conversation.phone || conversation.name;
+  const sender = currentUser?.username || currentUser?.phone || currentUser?.name;
 
   if (!receiver || !sender) {
     return conversation.chatId || null;

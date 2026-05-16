@@ -40,8 +40,6 @@ const config = {
   LIVEKIT_URL: normalizeLiveKitUrl(env.LIVEKIT_URL),
   LIVEKIT_API_KEY: trimEnv(env.LIVEKIT_API_KEY) || '',
   LIVEKIT_API_SECRET: trimEnv(env.LIVEKIT_API_SECRET) || '',
-  GOOGLE_CLIENT_ID: trimEnv(env.GOOGLE_CLIENT_ID) || '',
-  GOOGLE_CLIENT_SECRET: trimEnv(env.GOOGLE_CLIENT_SECRET) || '',
   APP_DOMAIN: env.APP_DOMAIN || env.CLIENT_URL || 'http://localhost:5173',
   SMTP_HOST: env.SMTP_HOST || (env.EMAIL_USER ? 'smtp.gmail.com' : ''),
   SMTP_PORT: Number(env.SMTP_PORT) || 587,

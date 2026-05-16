@@ -9,6 +9,28 @@ const { endMeeting, getMeeting, publicMeeting } = require('../../../sockets/room
 const { sendError, sendSuccess } = require('../../../utils/response');
 const { REFRESH_COOKIE_OPTIONS } = require('../../../utils/cookies');
 
+const anonCookieOptions = () => ({
+  httpOnly: true,
+  sameSite: config.COOKIE_SECURE ? 'none' : 'lax',
+  secure: config.COOKIE_SECURE,
+  signed: true,
+  maxAge: REFRESH_COOKIE_OPTIONS.maxAge,
+  path: '/',
+});
+
+const readHeaderAnonSession = (req) => {
+  const encoded = req.get('x-anon-session');
+  if (!encoded) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+};
+
 const createRoom = async (req, res, next) => {
   try {
     const room = await roomService.createRoom({
@@ -24,13 +46,7 @@ const createRoom = async (req, res, next) => {
       password: req.body.password,
     });
 
-    res.cookie('anonSession', session, {
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: config.COOKIE_SECURE,
-      signed: true,
-      maxAge: REFRESH_COOKIE_OPTIONS.maxAge,
-    });
+    res.cookie('anonSession', session, anonCookieOptions());
     cacheService.delByPrefix('http:user:').catch(() => {});
     emitToAll('room:created', {
       code: room.code,
@@ -49,6 +65,7 @@ const createRoom = async (req, res, next) => {
         shareUrl: `/room/${room.code}`,
         expiresAt: room.expiresAt,
         alias: participant.alias,
+        session,
       },
       'Room created',
       201
@@ -95,18 +112,50 @@ const getRoom = async (req, res, next) => {
 const joinRoom = async (req, res, next) => {
   try {
     const room = await roomService.findRoomByCode(req.params.code);
+    roomService.assertRoomActive(room);
+
+    const existingSession = req.signedCookies.anonSession || readHeaderAnonSession(req);
+    if (existingSession?.roomCode === room.code && existingSession?.sessionId) {
+      const existingParticipant = await roomService.findParticipant({
+        roomCode: room.code,
+        sessionId: existingSession.sessionId,
+      });
+
+      if (existingParticipant) {
+        const session = roomService.getAnonSession({
+          ...existingSession,
+          alias: existingParticipant.alias,
+          avatarColor: existingParticipant.avatarColor,
+          avatarAnimal: existingParticipant.avatarAnimal,
+          roomCode: room.code,
+        });
+
+        await roomService.setParticipantOnlineStatus({
+          roomCode: room.code,
+          sessionId: existingSession.sessionId,
+          isOnline: true,
+        });
+        res.cookie('anonSession', session, anonCookieOptions());
+
+        return sendSuccess(
+          res,
+          {
+            alias: existingParticipant.alias,
+            avatarColor: existingParticipant.avatarColor,
+            avatarAnimal: existingParticipant.avatarAnimal,
+            session,
+          },
+          'Joined room'
+        );
+      }
+    }
+
     const { participant, session } = await roomService.joinRoom({
       room,
       password: req.body.password,
     });
 
-    res.cookie('anonSession', session, {
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: config.COOKIE_SECURE,
-      signed: true,
-      maxAge: REFRESH_COOKIE_OPTIONS.maxAge,
-    });
+    res.cookie('anonSession', session, anonCookieOptions());
     cacheService.delByPrefix('http:user:').catch(() => {});
 
     emitToSocket(`anon:${room.code}`, 'room:joined', {
@@ -121,6 +170,7 @@ const joinRoom = async (req, res, next) => {
         alias: participant.alias,
         avatarColor: participant.avatarColor,
         avatarAnimal: participant.avatarAnimal,
+        session,
       },
       'Joined room'
     );
@@ -152,6 +202,11 @@ const getSession = async (req, res, next) => {
     }
 
     await roomService.requireActiveParticipant({ roomCode: req.params.code, sessionId: req.anonUser.sessionId });
+    await roomService.setParticipantOnlineStatus({
+      roomCode: req.params.code,
+      sessionId: req.anonUser.sessionId,
+      isOnline: true,
+    });
     return sendSuccess(res, roomService.getAnonSession(req.anonUser), 'Anonymous session fetched');
   } catch (error) {
     return next(error);

@@ -64,6 +64,8 @@ function MeetingSocketControls({ socket, sessionId, setError }) {
 
 export default function RoomMeetingPanel({ roomCode, onClose, socket, session, meetingState, mode = 'host' }) {
   const meetingEndTimerRef = useRef(null);
+  const finalMessageTimerRef = useRef(null);
+  const intentionalExitRef = useRef(false);
   const [meeting, setMeeting] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -73,6 +75,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   const [userChoices, setUserChoices] = useState(null);
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const [meetingEndedOverlay, setMeetingEndedOverlay] = useState(false);
+  const [finalMessage, setFinalMessage] = useState('');
   const [leaveToasts, setLeaveToasts] = useState([]);
   const [controlsPosition, setControlsPosition] = useState(null);
   const [participantsOpen, setParticipantsOpen] = useState(false);
@@ -91,7 +94,31 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   const meetingId = roomCode;
   const hostActionText = 'Start meeting';
   const hostTitleText = 'Start room meeting';
-  const meetingEndedText = isHost ? 'Meeting ended' : 'The host has ended this meeting';
+  const meetingEndedText = finalMessage || (isHost ? "You've ended the meeting." : 'The host has ended this meeting.');
+
+  const showFinalMessageAndClose = (message) => {
+    setFinalMessage(message);
+    setMeetingEndedOverlay(true);
+    if (finalMessageTimerRef.current) {
+      window.clearTimeout(finalMessageTimerRef.current);
+    }
+    finalMessageTimerRef.current = window.setTimeout(() => {
+      setMeetingEndedOverlay(false);
+      setFinalMessage('');
+      onClose?.();
+    }, 1800);
+  };
+
+  const resetMeetingUi = () => {
+    setMeeting(null);
+    setUserChoices(null);
+    setWaiting(false);
+    setWhiteboardOpen(false);
+    setWhiteboardReadOnly(false);
+    setConfirmEndOpen(false);
+    setParticipantsOpen(false);
+    setWaitingRoomOpen(false);
+  };
 
   const fetchMeetingToken = async () => {
     const response = await api.post(`/rooms/${roomCode}/meeting-token`);
@@ -147,15 +174,15 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   const confirmEndMeeting = async () => {
     setLoading(true);
     try {
+      intentionalExitRef.current = true;
       await api.delete(`/rooms/${roomCode}/meeting`);
       socket?.emit('meeting_ended', { meetingId });
-      setMeeting(null);
-      setUserChoices(null);
-      setWaiting(false);
-      setWhiteboardOpen(false);
-      setConfirmEndOpen(false);
-      onClose?.();
+      meetingJoinedRef.current = false;
+      resetMeetingUi();
+      setError('');
+      showFinalMessageAndClose("You've ended the meeting.");
     } catch (error) {
+      intentionalExitRef.current = false;
       setError(error.response?.data?.message || 'Unable to end meeting.');
     } finally {
       setLoading(false);
@@ -164,6 +191,12 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   };
 
   const handleLiveKitDisconnected = () => {
+    if (intentionalExitRef.current) {
+      meetingJoinedRef.current = false;
+      resetMeetingUi();
+      return;
+    }
+
     if (meetingJoinedRef.current) {
       if (!isHost) {
         socket?.emit('participant_left', {
@@ -182,14 +215,28 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   };
 
   const leaveMeetingPanel = () => {
-    if (meeting || meetingJoinedRef.current) {
-      handleLiveKitDisconnected();
+    if (isHost && (meeting || meetingJoinedRef.current || liveMeetingState?.active)) {
+      setConfirmEndOpen(true);
+      return;
     }
 
-    setWaiting(false);
-    setConfirmEndOpen(false);
-    setParticipantsOpen(false);
-    setWaitingRoomOpen(false);
+    if (meeting || meetingJoinedRef.current) {
+      intentionalExitRef.current = true;
+      if (!isHost && meetingJoinedRef.current) {
+        socket?.emit('participant_left', {
+          displayName: session?.alias || 'Participant',
+          meetingId,
+          userId: session?.sessionId,
+        });
+      }
+      meetingJoinedRef.current = false;
+      resetMeetingUi();
+      setError('');
+      showFinalMessageAndClose("You've left the meeting.");
+      return;
+    }
+
+    resetMeetingUi();
     onClose?.();
   };
 
@@ -244,22 +291,10 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
     };
     const closeAfterMeetingEnded = () => {
       meetingJoinedRef.current = false;
-      setMeeting(null);
-      setUserChoices(null);
-      setWaiting(false);
-      setWhiteboardOpen(false);
-      setWhiteboardReadOnly(false);
-      setParticipantsOpen(false);
-      setWaitingRoomOpen(false);
+      resetMeetingUi();
+      setError('');
       setLiveMeetingState({ active: false, pending: [], approved: [], activeParticipants: [] });
-      setMeetingEndedOverlay(true);
-      if (meetingEndTimerRef.current) {
-        window.clearTimeout(meetingEndTimerRef.current);
-      }
-      meetingEndTimerRef.current = window.setTimeout(() => {
-        setMeetingEndedOverlay(false);
-        onClose?.();
-      }, 1800);
+      showFinalMessageAndClose(isHost ? "You've ended the meeting." : 'The host has ended this meeting.');
     };
     const handleRoomEnded = closeAfterMeetingEnded;
     const handleWhiteboardOpened = () => {
@@ -374,7 +409,11 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                   }}
                   joinLabel={isHost ? hostActionText : 'Join meeting'}
                   micLabel="Microphone"
-                  onError={(nextError) => setError(getMeetingErrorMessage(nextError))}
+                  onError={(nextError) => {
+                    if (!intentionalExitRef.current) {
+                      setError(getMeetingErrorMessage(nextError));
+                    }
+                  }}
                   onSubmit={(choices) => setUserChoices(choices)}
                   userLabel="Display name"
                 />
@@ -397,7 +436,11 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                 connect
                 data-lk-theme="default"
                 onDisconnected={handleLiveKitDisconnected}
-                onError={(nextError) => setError(getMeetingErrorMessage(nextError))}
+                onError={(nextError) => {
+                  if (!intentionalExitRef.current) {
+                    setError(getMeetingErrorMessage(nextError));
+                  }
+                }}
                 serverUrl={meeting.url}
                 token={meeting.token}
                 video={

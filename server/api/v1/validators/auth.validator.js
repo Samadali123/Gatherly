@@ -17,11 +17,6 @@ const loginSchema = Joi.object({
   role: Joi.string().valid('personal', 'professional').default('personal'),
 }).or('email', 'identifier', 'emailOrPhone');
 
-const googleSchema = Joi.object({
-  credential: Joi.string().trim().required(),
-  role: Joi.string().valid('personal', 'professional').default('personal'),
-});
-
 const forgotPasswordSchema = Joi.object({
   email: Joi.string().trim().lowercase().email().required(),
 });
@@ -38,7 +33,6 @@ const resetPasswordSchema = Joi.object({
 module.exports = {
   registerSchema,
   loginSchema,
-  googleSchema,
   forgotPasswordSchema,
   validateResetTokenSchema,
   resetPasswordSchema,

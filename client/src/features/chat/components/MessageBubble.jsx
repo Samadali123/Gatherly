@@ -274,7 +274,7 @@ export default function MessageBubble({
                 ) : null}
                 {attachment.type === 'audio' ? (
                   <div className="p-3">
-                    <MediaPlayer src={attachment.url} type="audio" />
+                    <MediaPlayer durationHint={attachment.duration} src={attachment.url} type="audio" />
                   </div>
                 ) : null}
                 {attachment.type === 'document' ? (

@@ -30,8 +30,6 @@ const findByUsername = (username) => (username ? userModel.findOne({ username: u
 
 const findByPhone = (phone) => userModel.findOne({ phone: normalizePhone(phone) });
 
-const findByGoogleId = (googleId) => userModel.findOne({ googleId });
-
 const findByIdentifier = async (identifier) => {
   const value = String(identifier || '').trim();
   if (!value) return null;
@@ -117,26 +115,32 @@ const updateAvatar = (userId, avatarUrl) =>
     { new: true }
   );
 
-const searchUsers = async (query, excludeUserId, role = null) =>
-  userModel
+const searchUsers = async (query, excludeUserId, role = null) => {
+  const normalizedPhone = normalizePhone(query);
+  const digits = String(query || '').replace(/\D/g, '');
+  const filters = [
+    { username: { $regex: query, $options: 'i' } },
+    { phone: { $regex: normalizedPhone || digits || query, $options: 'i' } },
+  ];
+
+  if (digits && Number.isSafeInteger(Number(digits))) {
+    filters.push({ number: Number(digits) });
+  }
+
+  return userModel
     .find({
       _id: { $ne: excludeUserId },
       ...(role ? { role: roleFilter(role) } : {}),
-      $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { email: { $regex: query, $options: 'i' } },
-        { username: { $regex: query, $options: 'i' } },
-        { phone: { $regex: normalizePhone(query) || query, $options: 'i' } },
-      ],
+      $or: filters,
     })
-    .limit(10);
+    .limit(20);
+};
 
 module.exports = {
   sanitizeUser,
   normalizeRole,
   findById,
   findByEmail,
-  findByGoogleId,
   findByIdentifier,
   findByUsername,
   findByPhone,

@@ -38,21 +38,6 @@ export const useAuth = () => {
     }
   };
 
-  const loginWithGoogle = async (credential, role = 'personal') => {
-    setLoading(true);
-    try {
-      const response = await api.post('/auth/google', { credential, role });
-      const authPayload = response.data.data;
-      setStoredRefreshToken(authPayload.refreshToken);
-      setAuth(authPayload);
-      await connectSocket(authPayload.accessToken);
-      socket.emit('join-server');
-      return authPayload;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const logout = async () => {
     const refreshToken = getStoredRefreshToken();
 
@@ -74,7 +59,6 @@ export const useAuth = () => {
     initialized,
     loading,
     login,
-    loginWithGoogle,
     register,
     logout,
   };
@@ -116,9 +100,11 @@ export const useAuthBootstrap = () => {
 
         await connectSocket(refreshedToken);
         socket.emit('join-server');
-      } catch {
+      } catch (error) {
         if (active) {
-          clearStoredRefreshToken();
+          if ([401, 403].includes(error.response?.status)) {
+            clearStoredRefreshToken();
+          }
           markInitialized();
         }
       }

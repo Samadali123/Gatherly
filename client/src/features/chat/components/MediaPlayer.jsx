@@ -11,11 +11,12 @@ const formatTime = (value) => {
   return `${minutes}:${seconds}`;
 };
 
-export default function MediaPlayer({ src, type = 'video', compact = false, onExpand }) {
+export default function MediaPlayer({ src, type = 'video', compact = false, durationHint = 0, onExpand }) {
   const mediaRef = useRef(null);
+  const normalizedDurationHint = Number(durationHint) > 0 ? Number(durationHint) : 0;
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(normalizedDurationHint);
   const [currentTime, setCurrentTime] = useState(0);
   const [muted, setMuted] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -27,8 +28,11 @@ export default function MediaPlayer({ src, type = 'video', compact = false, onEx
     }
 
     const syncTime = () => setCurrentTime(media.currentTime || 0);
+    setDuration(normalizedDurationHint);
+
     const syncDuration = () => {
-      setDuration(media.duration || 0);
+      const nextDuration = normalizedDurationHint || media.duration || 0;
+      setDuration(Number.isFinite(nextDuration) ? nextDuration : 0);
       setLoading(false);
     };
     const handleWaiting = () => setLoading(true);
@@ -48,7 +52,7 @@ export default function MediaPlayer({ src, type = 'video', compact = false, onEx
       media.removeEventListener('canplay', handleCanPlay);
       media.removeEventListener('ended', handleEnded);
     };
-  }, [src]);
+  }, [normalizedDurationHint, src]);
 
   const togglePlay = async () => {
     const media = mediaRef.current;

@@ -24,6 +24,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
   const stickersButtonRef = useRef(null);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
+  const recordingStartedAtRef = useRef(null);
   const [pollOpen, setPollOpen] = useState(false);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -84,21 +85,27 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
     };
 
     recorder.onstop = () => {
+      const duration = recordingStartedAtRef.current
+        ? Math.max(1, Math.round((Date.now() - recordingStartedAtRef.current) / 1000))
+        : 0;
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
       const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
       stream.getTracks().forEach((track) => track.stop());
       clearPendingUpload();
       setPendingUpload({
         type: 'audio',
-        files: [{ file, previewUrl: URL.createObjectURL(file) }],
+        files: [{ file, previewUrl: URL.createObjectURL(file), duration }],
       });
+      recordingStartedAtRef.current = null;
       setRecording(false);
       setAddonsOpen(false);
     };
 
     recorder.start();
     setRecording(true);
-    setRecordingStartedAt(Date.now());
+    const startedAt = Date.now();
+    recordingStartedAtRef.current = startedAt;
+    setRecordingStartedAt(startedAt);
   };
 
   const stopRecording = () => {
@@ -133,8 +140,12 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
             files: pendingUpload.files.map((entry) => entry.file),
           })
         : [];
+      const attachmentsWithMetadata = (attachments || []).map((attachment, index) => ({
+        ...attachment,
+        ...(pendingUpload?.files?.[index]?.duration ? { duration: pendingUpload.files[index].duration } : {}),
+      }));
 
-      await onSend(value, attachments || []);
+      await onSend(value, attachmentsWithMetadata);
       clearPendingUpload();
     } finally {
       setUploading(false);
@@ -202,7 +213,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                           <p className="text-[12px] text-text-secondary">{Math.ceil(entry.file.size / 1024)} KB</p>
                         </div>
                       </div>
-                      <MediaPlayer src={entry.previewUrl} type="audio" />
+                      <MediaPlayer durationHint={entry.duration} src={entry.previewUrl} type="audio" />
                     </div>
                   ) : (
                     <div className="flex min-h-[74px] items-center gap-3 p-3">

@@ -8,7 +8,7 @@ const { dndSchema, profileSchema } = require('../validators/user.validator');
 
 const router = express.Router();
 
-router.get('/search', authenticate, cacheResponse({ ttlSeconds: 10 }), userController.search);
+router.get('/search', authenticate, userController.search);
 router.get('/check-username', authenticate, cacheResponse({ ttlSeconds: 20 }), userController.checkUsername);
 router.get('/:id', authenticate, userController.getProfile);
 router.post('/:id/follow', authenticate, userController.follow);

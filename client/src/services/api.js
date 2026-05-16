@@ -6,7 +6,54 @@ import { API_BASE_URL } from './runtimeConfig';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
 });
+
+const ANON_SESSION_PREFIX = 'gatherly:anon-session:';
+
+const encodeAnonSession = (session) => {
+  try {
+    return window.btoa(JSON.stringify(session));
+  } catch {
+    return '';
+  }
+};
+
+const decodeAnonSession = (value) => {
+  try {
+    return JSON.parse(window.atob(value));
+  } catch {
+    return null;
+  }
+};
+
+const getRoomCodeFromUrl = (url = '') => {
+  const match = String(url).match(/\/rooms\/([^/?#]+)/);
+  return match?.[1] || null;
+};
+
+export const storeAnonRoomSession = (roomCode, session) => {
+  if (!roomCode || !session) {
+    return;
+  }
+
+  localStorage.setItem(`${ANON_SESSION_PREFIX}${roomCode}`, encodeAnonSession(session));
+};
+
+export const getStoredAnonRoomSession = (roomCode) => {
+  if (!roomCode) {
+    return null;
+  }
+
+  const encoded = localStorage.getItem(`${ANON_SESSION_PREFIX}${roomCode}`);
+  return encoded ? decodeAnonSession(encoded) : null;
+};
+
+export const clearStoredAnonRoomSession = (roomCode) => {
+  if (roomCode) {
+    localStorage.removeItem(`${ANON_SESSION_PREFIX}${roomCode}`);
+  }
+};
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -38,7 +85,7 @@ export const refreshAccessToken = async () => {
       throw error;
     }
 
-    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken }, { withCredentials: true });
 
     const accessToken = response.data?.data?.accessToken || null;
     const newRefreshToken = response.data?.data?.refreshToken || null;
@@ -73,9 +120,16 @@ setSocketRefreshHandler(async () => {
 });
 
 api.interceptors.request.use((config) => {
+  config.headers = config.headers || {};
   const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  const roomCode = getRoomCodeFromUrl(config.url);
+  const anonSession = roomCode ? localStorage.getItem(`${ANON_SESSION_PREFIX}${roomCode}`) : null;
+  if (anonSession) {
+    config.headers['X-Anon-Session'] = anonSession;
   }
 
   return config;

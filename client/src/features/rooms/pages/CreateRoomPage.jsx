@@ -1,7 +1,7 @@
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../../../services/api';
+import api, { storeAnonRoomSession } from '../../../services/api';
 import { connectSocket, socket } from '../../../services/socket';
 import ButtonSpinner from '../../../shared/components/ButtonSpinner';
 import { getFriendlyErrorMessage } from '../../../shared/utils/errorMessage';
@@ -81,6 +81,9 @@ export default function CreateRoomPage() {
         ...form,
         expiresAt: new Date(form.expiresAt).toISOString(),
       });
+      if (response.data.data?.session) {
+        storeAnonRoomSession(response.data.data.code, response.data.data.session);
+      }
       pushToast('Anonymous room created', 'success');
       navigate(`/room/${response.data.data.code}`);
     } catch (error) {

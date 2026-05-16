@@ -12,7 +12,7 @@ CREATE TABLE "users" (
     "bio" TEXT NOT NULL DEFAULT '',
     "password" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'personal',
-    "profileImage" TEXT NOT NULL DEFAULT 'https://thumbs.dreamstime.com/b/default-avatar-profile-icon-vector-social-media-user-image-182145777.jpg',
+    "profileImage" TEXT NOT NULL DEFAULT '/images/default_dp.webp',
     "avatar" TEXT,
     "socketId" TEXT NOT NULL DEFAULT '',
     "refreshTokenHash" TEXT,
@@ -69,7 +69,7 @@ CREATE TABLE "messages" (
 CREATE TABLE "groups" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "profileImage" TEXT NOT NULL DEFAULT 'https://imgs.search.brave.com/0bM_YGELGhDRpkha170xdj62rM1gANg5mUFtcD3Jcqw/rs:fit:860:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzLzJmLzU5/L2VmLzJmNTllZjc0/M2ZkYjliZmNmN2Yw/YTIxYjYzYTAwZjdlLmpwZw',
+    "profileImage" TEXT NOT NULL DEFAULT '/images/default_dp.webp',
     "users" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

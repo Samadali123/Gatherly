@@ -73,6 +73,14 @@
     outline: none;
   }
 
+  .gatherly-borderless-input,
+  .gatherly-borderless-input:focus,
+  .gatherly-borderless-input:focus-visible {
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
   html[data-theme='dark'] .bg-white {
     background-color: var(--color-bg-secondary) !important;
   }

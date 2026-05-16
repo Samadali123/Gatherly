@@ -13,10 +13,19 @@ const messageMatchesContact = (message, contact) => {
     contact.chatId === message.chatId ||
     participants.includes(contact.username) ||
     participants.includes(contact.target) ||
+    participants.includes(contact.phone) ||
     participants.includes(contact.email) ||
     participants.includes(contact.name)
   );
 };
+
+const sameContact = (entry, contact = {}) =>
+  Boolean(
+    (entry.userId && contact.userId && entry.userId === contact.userId) ||
+      (entry.username && contact.username && entry.username === contact.username) ||
+      (entry.phone && contact.phone && entry.phone === contact.phone) ||
+      (entry.target && contact.target && entry.target === contact.target)
+  );
 
 const buildToast = (message, variant = 'info', title = '') => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -37,23 +46,44 @@ export const useChatStore = create((set) => ({
   threadOpen: false,
   threadParent: null,
   threadMessages: [],
-  setContacts: (contacts) => set({ contacts }),
+  setContacts: (contacts) =>
+    set((state) => {
+      const mergedContacts = contacts.map((contact) => {
+        const existing = state.contacts.find((entry) => sameContact(entry, contact));
+        return existing
+          ? {
+              ...existing,
+              ...contact,
+              online: contact.online ?? existing.online,
+              unreadCount: contact.unreadCount ?? existing.unreadCount,
+              lastMessageAt: contact.lastMessageAt ?? existing.lastMessageAt,
+              lastMessagePreview: contact.lastMessagePreview ?? existing.lastMessagePreview,
+            }
+          : contact;
+      });
+
+      const retainedContacts = state.contacts.filter(
+        (entry) =>
+          !mergedContacts.some((contact) => sameContact(entry, contact)) &&
+          (entry.online || entry.lastMessageAt || entry.lastMessagePreview)
+      );
+
+      return { contacts: sortByLastMessage([...mergedContacts, ...retainedContacts]) };
+    }),
   upsertContact: (contact) =>
     set((state) => {
-      const existing = state.contacts.find(
-        (entry) => entry.userId === contact.userId || entry.username === contact.username
-      );
+      const existing = state.contacts.find((entry) => sameContact(entry, contact));
       const contacts = existing
         ? state.contacts.map((entry) =>
-            entry.userId === contact.userId || entry.username === contact.username ? { ...entry, ...contact } : entry
+            sameContact(entry, contact) ? { ...entry, ...contact } : entry
           )
         : [...state.contacts, contact];
       return { contacts };
     }),
-  markContactOnline: ({ userId, username, online }) =>
+  markContactOnline: ({ userId, username, phone, online }) =>
     set((state) => ({
       contacts: state.contacts.map((entry) =>
-        entry.userId === userId || entry.username === username ? { ...entry, online } : entry
+        sameContact(entry, { userId, username, phone }) ? { ...entry, online } : entry
       ),
     })),
   setContactUnread: ({ username, chatId, count, increment = false }) =>

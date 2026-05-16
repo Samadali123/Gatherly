@@ -53,10 +53,39 @@ const search = async (req, res, next) => {
   try {
     const query = req.query.q?.trim();
     const currentUser = await userService.findById(req.user.userId);
-    const currentRole = userService.normalizeRole(currentUser?.role);
 
     if (!query) {
-      const users = await chatService.listDirectContactsForUser(currentUser);
+      const [recentUsers, onlineUsers] = await Promise.all([
+        chatService.listDirectContactsForUser(currentUser),
+        userService.listOnlineUsers(),
+      ]);
+      const recentById = new Map(recentUsers.map((user) => [String(user._id), user]));
+      const mergedById = new Map();
+
+      recentUsers.forEach((user) => {
+        mergedById.set(String(user._id), user);
+      });
+
+      onlineUsers
+        .filter((user) => String(user._id) !== String(req.user.userId) && hasConnectedSocket(user.socketId))
+        .forEach((user) => {
+          const key = String(user._id);
+          const recent = recentById.get(key);
+          const plainUser = typeof user.toObject === 'function' ? user.toObject() : user;
+          mergedById.set(key, recent ? { ...plainUser, ...recent } : plainUser);
+        });
+
+      const users = Array.from(mergedById.values())
+        .filter((user) => String(user._id) !== String(req.user.userId))
+        .sort((left, right) => {
+          const leftTime = left.lastMessageAt ? new Date(left.lastMessageAt).getTime() : 0;
+          const rightTime = right.lastMessageAt ? new Date(right.lastMessageAt).getTime() : 0;
+          if (leftTime !== rightTime) return rightTime - leftTime;
+          if (Boolean(hasConnectedSocket(left.socketId)) !== Boolean(hasConnectedSocket(right.socketId))) {
+            return hasConnectedSocket(left.socketId) ? -1 : 1;
+          }
+          return String(left.username || left.name || '').localeCompare(String(right.username || right.name || ''));
+        });
       const data = await Promise.all(users.map((user) => toPublicUser(user, req.user.userId, {
         lastMessagePreview: user.lastMessagePreview,
         lastMessageAt: user.lastMessageAt,
@@ -64,7 +93,7 @@ const search = async (req, res, next) => {
       return sendSuccess(res, data, 'Users fetched');
     }
 
-    const users = await userService.searchUsers(query, req.user.userId, currentRole);
+    const users = await userService.searchUsers(query, req.user.userId);
     const data = await Promise.all(users.map((user) => toPublicUser(user, req.user.userId)));
     return sendSuccess(res, data, 'Users fetched');
   } catch (error) {

@@ -1,5 +1,25 @@
 const userService = require('../../services/userService');
 const logger = require('../../utils/logger');
+const { hasConnectedSocket } = require('../state');
+
+const buildPresenceUser = (user) => ({
+  userId: user._id.toString(),
+  name: user.name,
+  username: user.username || user.phone || user.name,
+  phone: user.phone || '',
+  avatar: user.avatar || user.profileImage,
+  profileImage: user.profileImage || user.avatar,
+});
+
+const emitOnlineSnapshot = async (socket) => {
+  const onlineUsers = await userService.listOnlineUsers();
+  socket.emit(
+    'online-users',
+    onlineUsers
+      .filter((onlineUser) => onlineUser.socketId !== socket.id && hasConnectedSocket(onlineUser.socketId))
+      .map(buildPresenceUser)
+  );
+};
 
 const registerPresenceHandlers = (io, socket) => {
   socket.on('join-server', async () => {
@@ -12,26 +32,18 @@ const registerPresenceHandlers = (io, socket) => {
         return;
       }
 
-      const onlineUsers = await userService.listOnlineUsers();
-      onlineUsers
-        .filter((onlineUser) => onlineUser.socketId !== socket.id)
-        .forEach((onlineUser) => {
-          socket.emit('new-user-join', {
-            userId: onlineUser._id.toString(),
-            name: onlineUser.name,
-            username: onlineUser.username || onlineUser.email,
-            profileImage: onlineUser.profileImage,
-          });
-        });
-
-      socket.broadcast.emit('new-user-join', {
-        userId: currentUser._id.toString(),
-        name: currentUser.name,
-        username: currentUser.username || currentUser.email,
-        profileImage: currentUser.profileImage,
-      });
+      await emitOnlineSnapshot(socket);
+      socket.broadcast.emit('new-user-join', buildPresenceUser(currentUser));
     } catch (error) {
       logger.error(`join-server failed: ${error.message}`);
+    }
+  });
+
+  socket.on('presence:refresh', async () => {
+    try {
+      await emitOnlineSnapshot(socket);
+    } catch (error) {
+      logger.error(`presence refresh failed: ${error.message}`);
     }
   });
 
@@ -42,7 +54,8 @@ const registerPresenceHandlers = (io, socket) => {
       if (disconnectedUser) {
         socket.broadcast.emit('user:left', {
           userId: disconnectedUser._id.toString(),
-          username: disconnectedUser.username || disconnectedUser.email,
+          username: disconnectedUser.username || disconnectedUser.phone || disconnectedUser.name,
+          phone: disconnectedUser.phone || '',
         });
       }
     } catch (error) {

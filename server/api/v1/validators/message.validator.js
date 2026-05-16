@@ -25,6 +25,7 @@ const attachmentSchema = Joi.object({
     then: Joi.string().uri().required(),
     otherwise: Joi.string().uri().allow('', null).default(''),
   }),
+  duration: Joi.number().integer().min(0).max(24 * 60 * 60).default(0),
 });
 
 const statusContextSchema = Joi.object({
