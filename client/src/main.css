@@ -88,6 +88,41 @@
   }
 }
 
+@layer components {
+  .gatherly-prejoin :where(button[type='submit'], .lk-button[type='submit']) {
+    display: inline-flex !important;
+    min-height: 44px !important;
+    min-width: 160px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 999px !important;
+    border: 1px solid var(--color-brand-primary) !important;
+    background: var(--color-brand-primary) !important;
+    padding: 0 22px !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 12px 34px rgba(36, 81, 67, 0.2) !important;
+    transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease !important;
+  }
+
+  .gatherly-prejoin :where(button[type='submit'], .lk-button[type='submit']):hover {
+    background: var(--color-brand-hover) !important;
+    box-shadow: 0 16px 42px rgba(36, 81, 67, 0.28) !important;
+  }
+
+  .gatherly-prejoin :where(button[type='submit'], .lk-button[type='submit']):active {
+    transform: scale(0.98) !important;
+  }
+
+  .gatherly-prejoin :where(button[type='submit'], .lk-button[type='submit']):disabled {
+    border-color: var(--color-border-default) !important;
+    background: var(--color-border-default) !important;
+    color: var(--color-text-secondary) !important;
+    box-shadow: none !important;
+  }
+}
+
 @layer utilities {
   @keyframes message-flash {
     0%, 100% {
@@ -113,6 +148,17 @@
 
   .status-fade-in {
     animation: status-fade-in 400ms ease-in-out;
+  }
+
+  @keyframes gatherly-wave {
+    0%, 100% {
+      transform: scaleY(0.58);
+      opacity: 0.58;
+    }
+    50% {
+      transform: scaleY(1);
+      opacity: 1;
+    }
   }
 
   .scrollbar-chat {

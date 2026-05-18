@@ -4,7 +4,7 @@ const authenticate = require('../middlewares/auth.middleware');
 const validate = require('../middlewares/validate.middleware');
 const upload = require('../middlewares/upload.middleware');
 const { cacheResponse } = require('../middlewares/cache.middleware');
-const { dndSchema, profileSchema } = require('../validators/user.validator');
+const { profileSchema } = require('../validators/user.validator');
 
 const router = express.Router();
 
@@ -17,6 +17,5 @@ router.post('/:id/block', authenticate, userController.block);
 router.delete('/:id/block', authenticate, userController.unblock);
 router.patch('/profile', authenticate, validate(profileSchema), userController.updateProfile);
 router.post('/avatar', authenticate, upload.single('avatar'), userController.updateAvatar);
-router.patch('/me/dnd', authenticate, validate(dndSchema), userController.updateDnd);
 
 module.exports = router;

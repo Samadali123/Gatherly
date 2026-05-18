@@ -1,4 +1,4 @@
-import { FileText, Image, Mic, Paperclip, Smile, Square, SendHorizontal, Video, Vote, X } from 'lucide-react';
+import { FileText, Image, Mic, Paperclip, Smile, SendHorizontal, Vote, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import PollCreator from './PollCreator';
 import MediaPlayer from './MediaPlayer';
@@ -6,7 +6,6 @@ import ChatEmojiGifPicker from './ChatEmojiGifPicker';
 
 const uploadOptions = [
   { type: 'image', label: 'Images', icon: Image, accept: 'image/jpeg,image/png,image/webp,image/gif', multiple: true },
-  { type: 'video', label: 'Video', icon: Video, accept: 'video/mp4,video/webm,video/quicktime', multiple: false },
   {
     type: 'document',
     label: 'Document',
@@ -16,24 +15,19 @@ const uploadOptions = [
   },
 ];
 
-const getPreviewUrl = (file) => (file.type.startsWith('image/') || file.type.startsWith('video/') ? URL.createObjectURL(file) : '');
+const getPreviewUrl = (file) => (file.type.startsWith('image/') ? URL.createObjectURL(file) : '');
 
 export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAttachments, pollLoading = false }) {
   const textareaRef = useRef(null);
   const fileInputRefs = useRef({});
   const stickersButtonRef = useRef(null);
-  const recorderRef = useRef(null);
-  const chunksRef = useRef([]);
   const [pollOpen, setPollOpen] = useState(false);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [recording, setRecording] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
   const [stickersOpen, setStickersOpen] = useState(false);
   const [stickersTab, setStickersTab] = useState('stickers');
-  const [recordingStartedAt, setRecordingStartedAt] = useState(null);
-  const [recordingNow, setRecordingNow] = useState(Date.now());
 
   useEffect(() => () => {
     (pendingUpload?.files || []).forEach((entry) => {
@@ -69,53 +63,6 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
     });
     setAddonsOpen(false);
   };
-
-  const startRecording = async () => {
-    setAddonsOpen(false);
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    chunksRef.current = [];
-    const recorder = new MediaRecorder(stream);
-    recorderRef.current = recorder;
-
-    recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        chunksRef.current.push(event.data);
-      }
-    };
-
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-      const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
-      stream.getTracks().forEach((track) => track.stop());
-      clearPendingUpload();
-      setPendingUpload({
-        type: 'audio',
-        files: [{ file, previewUrl: URL.createObjectURL(file) }],
-      });
-      setRecording(false);
-      setAddonsOpen(false);
-    };
-
-    recorder.start();
-    setRecording(true);
-    setRecordingStartedAt(Date.now());
-  };
-
-  const stopRecording = () => {
-    recorderRef.current?.stop();
-    setRecordingStartedAt(null);
-  };
-
-  useEffect(() => {
-    if (!recording) {
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => setRecordingNow(Date.now()), 500);
-    return () => window.clearInterval(intervalId);
-  }, [recording]);
-
-  const recordingSeconds = recordingStartedAt ? Math.floor((recordingNow - recordingStartedAt) / 1000) : 0;
 
   const submit = async () => {
     const value = textareaRef.current?.value?.trim();
@@ -174,7 +121,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
             <div className="flex items-center justify-between gap-3 border-b border-border-default px-4 py-2.5">
               <div>
                 <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-brand-primary">
-                {pendingUpload.type === 'image' ? `${pendingUpload.files.length} image${pendingUpload.files.length > 1 ? 's' : ''}` : pendingUpload.type === 'audio' ? 'Voice note' : pendingUpload.type}
+                  {pendingUpload.type === 'image' ? `${pendingUpload.files.length} image${pendingUpload.files.length > 1 ? 's' : ''}` : pendingUpload.type === 'audio' ? 'Audio note' : pendingUpload.type}
                 </p>
                 <p className="mt-0.5 text-[12px] text-text-secondary">Ready to send</p>
               </div>
@@ -191,8 +138,6 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                 <div className="relative overflow-hidden rounded-lg bg-bg-secondary shadow-sm" key={`${entry.file.name}-${entry.file.size}`}>
                   {pendingUpload.type === 'image' ? (
                     <img alt={entry.file.name} className="h-32 w-full object-cover sm:h-36" src={entry.previewUrl} />
-                  ) : pendingUpload.type === 'video' ? (
-                    <MediaPlayer compact src={entry.previewUrl} type="video" />
                   ) : pendingUpload.type === 'audio' ? (
                     <div className="bg-bg-secondary p-3">
                       <div className="mb-3 flex items-center gap-3">
@@ -215,35 +160,6 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                   )}
                 </div>
               ))}
-            </div>
-          </div>
-        ) : null}
-        {recording ? (
-          <div className="mb-3 rounded-xl bg-brand-subtle px-4 py-3 shadow-card">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
-                  <Mic size={18} strokeWidth={1.7} />
-                  <span className="absolute inset-0 animate-ping rounded-full bg-brand-primary/35" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-text-primary">Recording voice note</p>
-                  <div className="mt-2 flex h-8 items-end gap-1">
-                    {Array.from({ length: 18 }).map((_, index) => (
-                      <span
-                        className="w-1 rounded-full bg-brand-primary/80"
-                        key={index}
-                        style={{
-                          height: `${8 + ((index * 7 + recordingSeconds * 5) % 22)}px`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <button className="min-h-11 rounded-full bg-brand-primary px-4 text-[13px] font-medium text-white" onClick={stopRecording} type="button">
-                Stop {Math.floor(recordingSeconds / 60)}:{String(recordingSeconds % 60).padStart(2, '0')}
-              </button>
             </div>
           </div>
         ) : null}
@@ -288,59 +204,43 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                 </button>
                 {addonsOpen ? (
                   <div className="absolute bottom-[calc(100%+12px)] right-0 z-20 w-[min(88vw,240px)] overflow-hidden rounded-xl border border-border-default bg-white p-2 shadow-[0_18px_60px_rgba(23,35,32,0.16)]">
-                {uploadOptions.map((option) => {
-                  const Icon = option.icon;
+                    {uploadOptions.map((option) => {
+                      const Icon = option.icon;
 
-                  return (
-                    <div key={option.type}>
-                      <input
-                        accept={option.accept}
-                        className="hidden"
-                        multiple={option.multiple}
-                        onChange={(event) => {
-                          selectFiles(option.type, event.target.files);
-                          event.target.value = '';
-                        }}
-                        ref={(node) => {
-                          fileInputRefs.current[option.type] = node;
-                        }}
-                        type="file"
-                      />
-                      <button
-                        className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-text-primary transition hover:bg-brand-subtle"
-                        disabled={disabled || uploading || sending}
-                        onClick={() => fileInputRefs.current[option.type]?.click()}
-                        type="button"
-                      >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-subtle text-brand-primary">
-                          <Icon size={16} strokeWidth={1.5} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-[13px] font-medium">{option.label}</span>
-                          <span className="block text-[12px] text-text-secondary">
-                            {option.type === 'image' ? 'Up to 6 photos' : option.type === 'video' ? 'One playable clip' : 'PDF, Word, Excel or text'}
-                          </span>
-                        </span>
-                      </button>
-                    </div>
-                  );
-                })}
-                    <button
-                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-brand-subtle ${
-                        recording ? 'text-brand-primary' : 'text-text-primary'
-                      }`}
-                      disabled={disabled || uploading || sending}
-                      onClick={recording ? stopRecording : startRecording}
-                      type="button"
-                    >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-subtle text-brand-primary">
-                        {recording ? <Square size={16} strokeWidth={1.5} /> : <Mic size={16} strokeWidth={1.5} />}
-                      </span>
-                      <span>
-                        <span className="block text-[13px] font-medium">{recording ? 'Stop recording' : 'Recording'}</span>
-                        <span className="block text-[12px] text-text-secondary">Create a voice note</span>
-                      </span>
-                    </button>
+                      return (
+                        <div key={option.type}>
+                          <input
+                            accept={option.accept}
+                            className="hidden"
+                            multiple={option.multiple}
+                            onChange={(event) => {
+                              selectFiles(option.type, event.target.files);
+                              event.target.value = '';
+                            }}
+                            ref={(node) => {
+                              fileInputRefs.current[option.type] = node;
+                            }}
+                            type="file"
+                          />
+                          <button
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-text-primary transition hover:bg-brand-subtle"
+                            disabled={disabled || uploading || sending}
+                            onClick={() => fileInputRefs.current[option.type]?.click()}
+                            type="button"
+                          >
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-subtle text-brand-primary">
+                              <Icon size={16} strokeWidth={1.5} />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-[13px] font-medium">{option.label}</span>
+                              <span className="block text-[12px] text-text-secondary">
+                                {option.type === 'image' ? 'Up to 6 photos' : 'PDF, Word, Excel or text'}
+                              </span>
+                            </span>
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : null}
               </div>

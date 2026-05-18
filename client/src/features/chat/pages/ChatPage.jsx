@@ -2,7 +2,6 @@ import {
   Edit3,
   Menu,
   MessageCircleMore,
-  Moon,
   MoreVertical,
   Phone,
   Reply,
@@ -242,12 +241,6 @@ export default function ChatPage() {
                 </button>
                 <div className="min-w-0">
                   <p className="truncate text-[16px] font-medium text-text-primary">{user?.username || user?.name}</p>
-                  {user?.dndActive ? (
-                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-subtle px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-brand-primary">
-                      <Moon size={12} strokeWidth={1.5} />
-                      DND
-                    </span>
-                  ) : null}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">

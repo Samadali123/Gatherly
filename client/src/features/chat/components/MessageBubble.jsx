@@ -269,9 +269,6 @@ export default function MessageBubble({
             ) : null}
             {otherAttachments.map((attachment) => (
               <div className="overflow-hidden rounded-lg bg-white/70" key={attachment.url}>
-                {attachment.type === 'video' ? (
-                  <MediaPlayer compact onExpand={() => setPreview(attachment)} src={attachment.url} type="video" />
-                ) : null}
                 {attachment.type === 'audio' ? (
                   <div className="p-3">
                     <MediaPlayer src={attachment.url} type="audio" />
@@ -516,7 +513,6 @@ export default function MessageBubble({
                 />
               </div>
             ) : null}
-            {preview.type === 'video' ? <MediaPlayer src={preview.url} type="video" /> : null}
           </div>
         </div>
       ) : null}

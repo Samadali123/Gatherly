@@ -36,7 +36,7 @@ const openApiSpec = {
     { name: 'Groups', description: 'Group creation and joining' },
     { name: 'Messages', description: 'Messages, pins, threads, and reactions' },
     { name: 'Polls', description: 'Poll creation and voting' },
-    { name: 'Users', description: 'User notification settings' },
+    { name: 'Users', description: 'User profiles and social graph' },
     { name: 'Rooms', description: 'Anonymous room lifecycle and participants' },
   ],
   components: {
@@ -81,7 +81,6 @@ const openApiSpec = {
           name: { type: 'string', example: 'Samad Ali' },
           email: { type: 'string', example: 'samad@example.com' },
           avatar: { type: 'string', nullable: true },
-          dndEnabled: { type: 'boolean', example: false },
           lastLoginAt: { type: 'string', format: 'date-time', nullable: true },
         },
       },
@@ -507,43 +506,6 @@ const openApiSpec = {
         responses: {
           200: { description: 'Poll fetched' },
           404: { description: 'Poll not found' },
-        },
-      },
-    },
-    '/users/me/dnd': {
-      patch: {
-        tags: ['Users'],
-        summary: 'Update do-not-disturb settings',
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['dndEnabled'],
-                properties: {
-                  dndEnabled: { type: 'boolean', example: true },
-                  dndSchedule: {
-                    type: 'object',
-                    properties: {
-                      from: { type: 'string', example: '22:00', nullable: true },
-                      to: { type: 'string', example: '07:00', nullable: true },
-                    },
-                  },
-                  dndWhitelist: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    example: [],
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          200: { description: 'DND settings updated' },
-          422: { description: 'Validation failed' },
         },
       },
     },

@@ -1,6 +1,6 @@
 const prisma = require('../configs/prisma');
 
-const arrayFields = new Set(['users', 'hiddenFor', 'readBy', 'dndWhitelist']);
+const arrayFields = new Set(['users', 'hiddenFor', 'readBy']);
 const modelMap = {
   anonMessage: 'anonMessage',
   anonParticipant: 'anonParticipant',

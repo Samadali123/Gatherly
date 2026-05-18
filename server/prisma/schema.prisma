@@ -28,10 +28,6 @@ model User {
   tokenVersion      Int      @default(0)
   lastLoginAt       DateTime?
   passwordChangedAt DateTime?
-  dndEnabled        Boolean  @default(false)
-  dndSchedule       Json?
-  dndPeriod         Json?
-  dndWhitelist      String[] @default([])
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

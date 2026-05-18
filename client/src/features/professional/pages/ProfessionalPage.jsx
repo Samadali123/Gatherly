@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const plans = [
-  { name: 'Personal', price: 'Free', limit: 'Up to 10 room members', details: 'Chat, anonymous rooms, status, attachments, DND.' },
+  { name: 'Personal', price: 'Free', limit: 'Up to 10 room members', details: 'Chat, anonymous rooms, status, and attachments.' },
   { name: 'Professional', price: '$12 / seat', limit: 'Teams, meetings, whiteboard', details: 'Room meetings, collaborative boards, exports, admin controls.' },
   { name: 'Business', price: 'Custom', limit: 'Compliance and scale', details: 'SAML, audit logs, retention, priority support, industry workspaces.' },
 ];

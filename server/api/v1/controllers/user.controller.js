@@ -32,23 +32,6 @@ const toPublicUser = async (user, viewerId, extra = {}) => {
   };
 };
 
-const updateDnd = async (req, res, next) => {
-  try {
-    const whitelistUsers = await Promise.all(req.body.dndWhitelist.map((id) => userService.findById(id)));
-    const missing = whitelistUsers.some((user) => !user);
-
-    if (missing) {
-      return sendError(res, 'User not found', 404);
-    }
-
-    const updated = await userService.updateDndSettings(req.user.userId, req.body);
-
-    return sendSuccess(res, userService.sanitizeUser(updated), 'DND settings updated');
-  } catch (error) {
-    return next(error);
-  }
-};
-
 const search = async (req, res, next) => {
   try {
     const query = req.query.q?.trim();
@@ -233,7 +216,6 @@ const updateAvatar = async (req, res, next) => {
 
 module.exports = {
   health,
-  updateDnd,
   search,
   getProfile,
   checkUsername,

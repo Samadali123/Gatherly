@@ -10,7 +10,7 @@ const imagekit = new ImageKit({
 const allowedTypes = {
   image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
   video: ['video/mp4', 'video/webm', 'video/quicktime'],
-  audio: ['audio/webm', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg'],
+  audio: ['audio/webm', 'audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/wav', 'audio/ogg'],
   document: [
     'application/pdf',
     'application/msword',
@@ -93,6 +93,9 @@ const uploadFile = async ({ file, folder, type }) => {
   return {
     type,
     url: result.url,
+    mimeType: file.mimetype,
+    name: file.originalname,
+    size: file.size,
   };
 };
 

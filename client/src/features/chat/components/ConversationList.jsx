@@ -53,9 +53,15 @@ function ConversationList({ contacts, activeConversation, onSelect, onOpenProfil
                   {item.lastMessagePreview || (item.online ? 'Online now' : 'Available for DM')}
                 </p>
               </div>
-              <Badge className={item.unreadCount ? 'bg-[#17342c] text-white shadow-sm' : active ? 'border-brand-primary/30 bg-white text-brand-primary' : ''}>
-                {item.unreadCount ? item.unreadCount : item.online ? 'Online' : 'DM'}
-              </Badge>
+              {Number(item.unreadCount || 0) > 0 ? (
+                <span className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-full border border-[#06231d] bg-[#06231d] px-2 text-[13px] font-black leading-none text-white shadow-[0_3px_10px_rgba(6,35,29,0.25)]">
+                  {Number(item.unreadCount) > 99 ? '99+' : item.unreadCount}
+                </span>
+              ) : (
+                <Badge className={active ? 'border-brand-primary/30 bg-white text-brand-primary' : ''}>
+                  {item.online ? 'Online' : 'DM'}
+                </Badge>
+              )}
             </button>
             {onOpenProfile ? (
               <button

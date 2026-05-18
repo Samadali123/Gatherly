@@ -11,6 +11,22 @@ const api = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 let refreshPromise = null;
+let sessionInvalidated = false;
+
+const endAuthSession = () => {
+  if (sessionInvalidated) {
+    return;
+  }
+
+  sessionInvalidated = true;
+  useAuthStore.getState().clearAuth();
+  clearStoredRefreshToken();
+  disconnectSocket();
+
+  if (!['/login', '/register'].includes(window.location.pathname)) {
+    window.location.assign('/login');
+  }
+};
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
@@ -25,6 +41,12 @@ const processQueue = (error, token = null) => {
 };
 
 export const refreshAccessToken = async () => {
+  if (sessionInvalidated) {
+    const error = new Error('Please sign in again.');
+    error.statusCode = 401;
+    throw error;
+  }
+
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -44,6 +66,7 @@ export const refreshAccessToken = async () => {
     const newRefreshToken = response.data?.data?.refreshToken || null;
 
     if (accessToken) {
+      sessionInvalidated = false;
       useAuthStore.getState().setAccessToken(accessToken);
     }
     if (newRefreshToken) {
@@ -55,6 +78,11 @@ export const refreshAccessToken = async () => {
 
   try {
     return await refreshPromise;
+  } catch (error) {
+    if (error.response?.status === 401 || error.statusCode === 401) {
+      endAuthSession();
+    }
+    throw error;
   } finally {
     refreshPromise = null;
   }
@@ -64,16 +92,13 @@ setSocketRefreshHandler(async () => {
   try {
     return await refreshAccessToken();
   } catch (error) {
-    useAuthStore.getState().clearAuth();
-    clearStoredRefreshToken();
-    disconnectSocket();
-    window.location.assign('/login');
+    endAuthSession();
     throw error;
   }
 });
 
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
+  const token = sessionInvalidated ? null : useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -82,10 +107,22 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const requestUrl = response.config?.url || '';
+    if (requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register')) {
+      sessionInvalidated = false;
+    }
+
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     const requestUrl = originalRequest?.url || '';
+
+    if (error.response?.status === 401 && requestUrl.includes('/auth/refresh')) {
+      endAuthSession();
+      return Promise.reject(error);
+    }
 
     if (
       error.response?.status === 401 &&
@@ -116,10 +153,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        useAuthStore.getState().clearAuth();
-        clearStoredRefreshToken();
-        disconnectSocket();
-        window.location.assign('/login');
+        endAuthSession();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

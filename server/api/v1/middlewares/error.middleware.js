@@ -82,7 +82,14 @@ const errorHandler = (err, req, res, next) => {
     errors = null;
   }
 
-  logger.error(`${req.method} ${req.originalUrl} -> ${statusCode} ${message} :: ${err.stack || err.message || err}`);
+  const isExpectedAuthError = statusCode === 401 && req.originalUrl?.includes('/auth/refresh');
+  const logMessage = `${req.method} ${req.originalUrl} -> ${statusCode} ${message}`;
+
+  if (isExpectedAuthError) {
+    logger.warn(logMessage);
+  } else {
+    logger.error(`${logMessage} :: ${err.stack || err.message || err}`);
+  }
 
   return sendError(res, message, statusCode, errors);
 };

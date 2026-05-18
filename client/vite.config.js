@@ -3,10 +3,12 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const giphyApiKey = env.VITE_GIPHY_API_KEY || env.REACT_APP_GIPHY_API_KEY || '';
 
   return {
     define: {
-      'import.meta.env.VITE_GIPHY_API_KEY': JSON.stringify(env.VITE_GIPHY_API_KEY || ''),
+      'import.meta.env.VITE_GIPHY_API_KEY': JSON.stringify(giphyApiKey),
+      'import.meta.env.REACT_APP_GIPHY_API_KEY': JSON.stringify(giphyApiKey),
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL || ''),
       'import.meta.env.VITE_SOCKET_URL': JSON.stringify(env.VITE_SOCKET_URL || ''),
     },

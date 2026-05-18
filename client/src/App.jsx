@@ -13,7 +13,6 @@ const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPassword
 const ChatPage = lazy(() => import('./features/chat/pages/ChatPage'));
 const CreateRoomPage = lazy(() => import('./features/rooms/pages/CreateRoomPage'));
 const AnonRoomPage = lazy(() => import('./features/rooms/pages/AnonRoomPage'));
-const NotificationsSettingsPage = lazy(() => import('./features/notifications/pages/NotificationsSettingsPage'));
 const StatusPage = lazy(() => import('./features/status/pages/StatusPage'));
 const ProfilePage = lazy(() => import('./features/profile/pages/ProfilePage'));
 const EditProfilePage = lazy(() => import('./features/profile/pages/EditProfilePage'));
@@ -73,7 +72,6 @@ export default function App() {
             <Route path="/status" element={<StatusPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/edit" element={<EditProfilePage />} />
-            <Route path="/settings/notifications" element={<NotificationsSettingsPage />} />
             <Route element={<ProfessionalRoute />}>
               <Route path="/professional" element={<Navigate replace to="/rooms/new" />} />
             </Route>

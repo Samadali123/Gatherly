@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { getEmojiPickerPosition } from '../utils/emojiPickerPosition';
 import { buildGiphyUrl, getNextGiphyOffset, mapGiphyGif } from '../utils/giphyGif';
 
-const apiKey = import.meta.env.VITE_GIPHY_API_KEY || '';
+const apiKey = import.meta.env.VITE_GIPHY_API_KEY || import.meta.env.REACT_APP_GIPHY_API_KEY || '';
 
 export default function GifPicker({ anchorEl, onClose, onSelect, open }) {
   const pickerRef = useRef(null);
@@ -14,6 +14,7 @@ export default function GifPicker({ anchorEl, onClose, onSelect, open }) {
   const [gifs, setGifs] = useState([]);
   const [hoveredId, setHoveredId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [gifError, setGifError] = useState('');
   const [nextOffset, setNextOffset] = useState('');
   const [position, setPosition] = useState(null);
   const [query, setQuery] = useState('');
@@ -77,8 +78,12 @@ export default function GifPicker({ anchorEl, onClose, onSelect, open }) {
     requestRef.current = requestId;
     loadingRef.current = true;
     setLoading(true);
+    setGifError('');
     try {
       const response = await fetch(buildGiphyUrl({ apiKey, offset, query: value }));
+      if (!response.ok) {
+        throw new Error('GIFs could not load.');
+      }
       const data = await response.json();
       if (requestId !== requestRef.current) {
         return;
@@ -89,6 +94,14 @@ export default function GifPicker({ anchorEl, onClose, onSelect, open }) {
         return Array.from(new Map(merged.map((gif) => [gif.id, gif])).values());
       });
       setNextOffset(getNextGiphyOffset(data.pagination));
+    } catch (error) {
+      if (requestId === requestRef.current) {
+        setGifError('GIFs could not load right now. Please try again.');
+        if (!append) {
+          setGifs([]);
+          setNextOffset('');
+        }
+      }
     } finally {
       if (requestId === requestRef.current) {
         loadingRef.current = false;
@@ -116,6 +129,7 @@ export default function GifPicker({ anchorEl, onClose, onSelect, open }) {
       setLoading(false);
       setQuery('');
       setGifs([]);
+      setGifError('');
       setNextOffset('');
     }
   }, [open]);
@@ -141,10 +155,10 @@ export default function GifPicker({ anchorEl, onClose, onSelect, open }) {
       style={{ left: position.left, top: position.top }}
     >
       <div className="p-3">
-        <label className="flex min-h-11 items-center gap-2 rounded-full border border-border-default bg-bg-secondary px-3 text-text-secondary">
+        <label className="flex min-h-11 items-center gap-2 rounded-full border border-border-default bg-bg-secondary px-3 text-text-secondary focus-within:border-brand-primary">
           <Search size={16} strokeWidth={1.5} />
           <input
-            className="min-w-0 flex-1 bg-transparent text-[14px] text-text-primary placeholder:text-text-secondary"
+            className="min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[14px] text-text-primary outline-none placeholder:text-text-secondary shadow-none ring-0 focus:border-0 focus:outline-none focus:ring-0"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search GIFs..."
             value={query}
@@ -160,7 +174,23 @@ export default function GifPicker({ anchorEl, onClose, onSelect, open }) {
       <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3" onScroll={handleScroll} ref={gridRef}>
         {!apiKey ? (
           <div className="rounded-lg bg-brand-subtle px-3 py-4 text-center text-[13px] leading-[1.5] text-text-primary">
-            GIF Api Not Added Yet
+            GIFs are not configured for this build. Add VITE_GIPHY_API_KEY and rebuild.
+          </div>
+        ) : null}
+        {apiKey && gifError ? (
+          <div className="rounded-lg bg-[#fff4ef] px-3 py-4 text-center text-[13px] leading-[1.5] text-text-primary">
+            {gifError}
+          </div>
+        ) : null}
+        {apiKey && loading && !gifs.length ? (
+          <div className="flex items-center justify-center gap-2 rounded-lg bg-brand-subtle px-3 py-4 text-[13px] text-text-primary">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-primary/25 border-t-brand-primary" />
+            Loading GIFs
+          </div>
+        ) : null}
+        {apiKey && !loading && !gifError && !gifs.length ? (
+          <div className="rounded-lg bg-bg-secondary px-3 py-4 text-center text-[13px] leading-[1.5] text-text-secondary">
+            No GIFs found.
           </div>
         ) : null}
         <div className="grid grid-cols-2 gap-1">

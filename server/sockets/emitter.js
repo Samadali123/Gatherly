@@ -1,6 +1,5 @@
 const userService = require('../services/userService');
 const groupService = require('../services/groupService');
-const { isUserInDnd } = require('../utils/dnd');
 const { getDirectChatParticipants, isDirectChatId } = require('../utils/chat');
 const { getIO } = require('./state');
 
@@ -24,7 +23,7 @@ const emitToAll = (event, payload) => {
   io.emit(event, payload);
 };
 
-const emitToUser = async (userId, event, payload, senderId = null) => {
+const emitToUser = async (userId, event, payload) => {
   const io = getIO();
 
   if (!io) {
@@ -34,13 +33,6 @@ const emitToUser = async (userId, event, payload, senderId = null) => {
   const user = await userService.findById(userId);
 
   if (!user || !user.socketId) {
-    return false;
-  }
-
-  const mutedUsers = (user.dndWhitelist || []).map((entry) => entry.toString());
-  const senderMuted = mutedUsers.length > 0 && senderId && mutedUsers.includes(senderId.toString());
-
-  if (isUserInDnd(user) && senderMuted) {
     return false;
   }
 

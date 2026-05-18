@@ -7,6 +7,32 @@ const getMessageTime = (message = {}) =>
 const sortByLastMessage = (items) =>
   [...items].sort((left, right) => (right.lastMessageAt || 0) - (left.lastMessageAt || 0));
 
+const contactIdentity = (contact = {}) =>
+  String(contact.userId || contact.id || contact._id || contact.username || contact.phone || contact.target || contact.name || '')
+    .trim()
+    .toLowerCase();
+
+const dedupeContacts = (contacts = []) => {
+  const byIdentity = new Map();
+
+  contacts.forEach((contact) => {
+    const identity = contactIdentity(contact);
+    if (!identity) {
+      return;
+    }
+
+    const existing = byIdentity.get(identity);
+    byIdentity.set(identity, existing ? { ...existing, ...contact } : contact);
+  });
+
+  return sortByLastMessage([...byIdentity.values()]);
+};
+
+const messageIdentity = (message = {}) =>
+  String(message._id || message.id || message.clientId || '')
+    .trim()
+    .toLowerCase();
+
 const messageMatchesContact = (message, contact) => {
   const participants = [message.sender, message.receiver].filter(Boolean);
   return (
@@ -37,18 +63,19 @@ export const useChatStore = create((set) => ({
   threadOpen: false,
   threadParent: null,
   threadMessages: [],
-  setContacts: (contacts) => set({ contacts }),
+  setContacts: (contacts) => set({ contacts: dedupeContacts(contacts) }),
   upsertContact: (contact) =>
     set((state) => {
-      const existing = state.contacts.find(
-        (entry) => entry.userId === contact.userId || entry.username === contact.username
+      const nextIdentity = contactIdentity(contact);
+      const contacts = state.contacts.map((entry) =>
+        contactIdentity(entry) === nextIdentity ? { ...entry, ...contact } : entry
       );
-      const contacts = existing
-        ? state.contacts.map((entry) =>
-            entry.userId === contact.userId || entry.username === contact.username ? { ...entry, ...contact } : entry
-          )
-        : [...state.contacts, contact];
-      return { contacts };
+
+      if (!contacts.some((entry) => contactIdentity(entry) === nextIdentity)) {
+        contacts.push(contact);
+      }
+
+      return { contacts: dedupeContacts(contacts) };
     }),
   markContactOnline: ({ userId, username, online }) =>
     set((state) => ({
@@ -104,12 +131,21 @@ export const useChatStore = create((set) => ({
       },
     })),
   appendMessage: (conversationKey, message) =>
-    set((state) => ({
-      messagesByConversation: {
-        ...state.messagesByConversation,
-        [conversationKey]: [...(state.messagesByConversation[conversationKey] || []), message],
-      },
-    })),
+    set((state) => {
+      const existing = state.messagesByConversation[conversationKey] || [];
+      const nextIdentity = messageIdentity(message);
+      const nextMessages =
+        nextIdentity && existing.some((entry) => messageIdentity(entry) === nextIdentity)
+          ? existing.map((entry) => (messageIdentity(entry) === nextIdentity ? { ...entry, ...message } : entry))
+          : [...existing, message];
+
+      return {
+        messagesByConversation: {
+          ...state.messagesByConversation,
+          [conversationKey]: nextMessages,
+        },
+      };
+    }),
   prependMessages: (conversationKey, messages) =>
     set((state) => {
       const existing = state.messagesByConversation[conversationKey] || [];

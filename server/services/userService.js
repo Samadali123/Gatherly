@@ -1,5 +1,4 @@
 const userModel = require('../models/user.model');
-const { isUserInDnd } = require('../utils/dnd');
 const { normalizePhone } = require('../utils/phone');
 
 const sanitizeUser = (user) => ({
@@ -15,10 +14,6 @@ const sanitizeUser = (user) => ({
   profileImage: user.profileImage,
   socketId: user.socketId,
   role: user.role,
-  dndEnabled: user.dndEnabled,
-  dndActive: isUserInDnd(user),
-  dndPeriod: user.dndPeriod,
-  dndWhitelist: user.dndWhitelist,
   lastLoginAt: user.lastLoginAt,
 });
 
@@ -86,17 +81,6 @@ const clearAllSocketIds = async () => {
   }
 };
 
-const updateDndSettings = (userId, payload) =>
-  userModel.findByIdAndUpdate(
-    userId,
-    {
-      dndEnabled: payload.dndEnabled,
-      dndPeriod: payload.dndPeriod,
-      dndWhitelist: payload.dndWhitelist,
-    },
-    { new: true }
-  );
-
 const updateProfile = (userId, payload) =>
   userModel.findByIdAndUpdate(
     userId,
@@ -146,7 +130,6 @@ module.exports = {
   updateSocketId,
   clearSocketById,
   clearAllSocketIds,
-  updateDndSettings,
   updateProfile,
   updateAvatar,
   searchUsers,

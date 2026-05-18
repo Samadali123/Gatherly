@@ -7,7 +7,6 @@ const config = require('../configs');
 const emailService = require('./emailService');
 const generateTokens = require('../utils/generateTokens');
 const { hashToken } = require('../utils/token');
-const { isUserInDnd } = require('../utils/dnd');
 const { looksLikePhone, normalizePhone } = require('../utils/phone');
 
 const BCRYPT_ROUNDS = 12;
@@ -26,10 +25,6 @@ const toAuthUser = (user) => ({
   avatar: user.avatar || user.profileImage,
   profileImage: user.profileImage,
   role: user.role === 'user' ? 'personal' : user.role,
-  dndEnabled: user.dndEnabled,
-  dndActive: isUserInDnd(user),
-  dndPeriod: user.dndPeriod,
-  dndWhitelist: user.dndWhitelist,
   lastLoginAt: user.lastLoginAt,
 });
 
