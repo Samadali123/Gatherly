@@ -271,7 +271,7 @@ export default function MessageBubble({
               <div className="overflow-hidden rounded-lg bg-white/70" key={attachment.url}>
                 {attachment.type === 'audio' ? (
                   <div className="p-3">
-                    <MediaPlayer src={attachment.url} type="audio" />
+                    <MediaPlayer durationHint={attachment.duration} src={attachment.url} type="audio" />
                   </div>
                 ) : null}
                 {attachment.type === 'document' ? (

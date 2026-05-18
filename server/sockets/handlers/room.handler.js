@@ -60,6 +60,23 @@ const registerRoomHandlers = (io, socket) => {
     return;
   }
 
+  roomService
+    .setParticipantOnlineStatus({
+      roomCode: socket.anonUser.roomCode,
+      sessionId: socket.anonUser.sessionId,
+      isOnline: true,
+    })
+    .then((participant) => {
+      if (participant) {
+        emitToSocket(`anon:${socket.anonUser.roomCode}`, 'room:joined', {
+          roomCode: socket.anonUser.roomCode,
+          sessionId: socket.anonUser.sessionId,
+          alias: participant.alias,
+        });
+      }
+    })
+    .catch((error) => logger.error(`anon reconnect failed: ${error.message}`));
+
   socket.on('room:message:send', async ({ content = '', parentMessageId = null, attachments = [] }) => {
     try {
       const room = await roomService.findRoomByCode(socket.anonUser.roomCode);

@@ -54,7 +54,7 @@ const searchActiveRooms = async (query = '', role = null) => {
 
   const rooms = await anonRoomModel.find(filter).sort({ createdAt: -1 }).limit(25);
   const counts = await anonParticipantModel.aggregate([
-    { $match: { roomCode: { $in: rooms.map((room) => room.code) } } },
+    { $match: { roomCode: { $in: rooms.map((room) => room.code) }, isOnline: true } },
     { $group: { _id: '$roomCode', count: { $sum: 1 } } },
   ]);
   const countByCode = new Map(counts.map((entry) => [entry._id, entry.count]));
@@ -83,7 +83,7 @@ const assertRoomActive = (room) => {
   }
 };
 
-const listParticipants = (roomCode) => anonParticipantModel.find({ roomCode }).sort({ joinedAt: 1 });
+const listParticipants = (roomCode) => anonParticipantModel.find({ roomCode, isOnline: true }).sort({ joinedAt: 1 });
 
 const joinRoom = async ({ room, password }) => {
   assertRoomActive(room);
@@ -98,7 +98,7 @@ const joinRoom = async ({ room, password }) => {
     }
   }
 
-  const participantCount = await anonParticipantModel.countDocuments({ roomCode: room.code });
+  const participantCount = await anonParticipantModel.countDocuments({ roomCode: room.code, isOnline: true });
 
   if (participantCount >= room.maxParticipants) {
     const error = new Error('Room is full');
@@ -106,7 +106,7 @@ const joinRoom = async ({ room, password }) => {
     throw error;
   }
 
-  const identity = createParticipantIdentity(participantCount + 1);
+  const identity = createParticipantIdentity((await anonParticipantModel.countDocuments({ roomCode: room.code })) + 1);
   const sessionId = generateSessionId();
 
   const participant = await anonParticipantModel.create({

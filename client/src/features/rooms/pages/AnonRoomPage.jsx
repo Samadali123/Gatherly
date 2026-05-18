@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import api from '../../../services/api';
+import api, { clearStoredAnonRoomSession, getStoredAnonRoomSession, storeAnonRoomSession } from '../../../services/api';
 import { SOCKET_URL } from '../../../services/runtimeConfig';
 import Spinner from '../../../shared/components/Spinner';
 import { useAuthStore } from '../../auth/authStore';
@@ -62,7 +62,7 @@ export default function AnonRoomPage() {
 
         try {
           const sessionResponse = await api.get(`/rooms/${code}/session`);
-          const currentSession = sessionResponse.data.data;
+          const currentSession = sessionResponse.data.data || getStoredAnonRoomSession(code);
           setSession(currentSession);
 
           const [participantResponse, messageResponse, pollResponse] = await Promise.all([
@@ -232,7 +232,10 @@ export default function AnonRoomPage() {
     setJoinLoading(true);
     try {
       setJoinError('');
-      await api.post(`/rooms/${code}/join`, { password });
+      const joinResponse = await api.post(`/rooms/${code}/join`, { password });
+      if (joinResponse.data.data?.session) {
+        storeAnonRoomSession(code, joinResponse.data.data.session);
+      }
       const [sessionResponse, participantResponse, messageResponse, pollResponse] = await Promise.all([
         api.get(`/rooms/${code}/session`),
         api.get(`/rooms/${code}/participants`),
@@ -372,6 +375,7 @@ export default function AnonRoomPage() {
   const deleteRoom = async () => {
     try {
       await api.delete(`/rooms/${code}`);
+      clearStoredAnonRoomSession(code);
       pushToast('Room deleted', 'success');
       navigate('/rooms/new');
     } catch (error) {

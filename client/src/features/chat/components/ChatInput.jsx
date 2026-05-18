@@ -21,6 +21,12 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
   const textareaRef = useRef(null);
   const fileInputRefs = useRef({});
   const stickersButtonRef = useRef(null);
+<<<<<<< HEAD
+=======
+  const recorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const recordingStartedAtRef = useRef(null);
+>>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
   const [pollOpen, setPollOpen] = useState(false);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -64,6 +70,62 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
     setAddonsOpen(false);
   };
 
+<<<<<<< HEAD
+=======
+  const startRecording = async () => {
+    setAddonsOpen(false);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    chunksRef.current = [];
+    const recorder = new MediaRecorder(stream);
+    recorderRef.current = recorder;
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunksRef.current.push(event.data);
+      }
+    };
+
+    recorder.onstop = () => {
+      const duration = recordingStartedAtRef.current
+        ? Math.max(1, Math.round((Date.now() - recordingStartedAtRef.current) / 1000))
+        : 0;
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+      const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
+      stream.getTracks().forEach((track) => track.stop());
+      clearPendingUpload();
+      setPendingUpload({
+        type: 'audio',
+        files: [{ file, previewUrl: URL.createObjectURL(file), duration }],
+      });
+      recordingStartedAtRef.current = null;
+      setRecording(false);
+      setAddonsOpen(false);
+    };
+
+    recorder.start();
+    setRecording(true);
+    const startedAt = Date.now();
+    recordingStartedAtRef.current = startedAt;
+    setRecordingStartedAt(startedAt);
+  };
+
+  const stopRecording = () => {
+    recorderRef.current?.stop();
+    setRecordingStartedAt(null);
+  };
+
+  useEffect(() => {
+    if (!recording) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => setRecordingNow(Date.now()), 500);
+    return () => window.clearInterval(intervalId);
+  }, [recording]);
+
+  const recordingSeconds = recordingStartedAt ? Math.floor((recordingNow - recordingStartedAt) / 1000) : 0;
+
+>>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
   const submit = async () => {
     const value = textareaRef.current?.value?.trim();
     if (!value && !pendingUpload?.files?.length) {
@@ -80,8 +142,12 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
             files: pendingUpload.files.map((entry) => entry.file),
           })
         : [];
+      const attachmentsWithMetadata = (attachments || []).map((attachment, index) => ({
+        ...attachment,
+        ...(pendingUpload?.files?.[index]?.duration ? { duration: pendingUpload.files[index].duration } : {}),
+      }));
 
-      await onSend(value, attachments || []);
+      await onSend(value, attachmentsWithMetadata);
       clearPendingUpload();
     } finally {
       setUploading(false);
@@ -147,7 +213,7 @@ export default function ChatInput({ disabled, onSend, onCreatePoll, onUploadAtta
                           <p className="text-[12px] text-text-secondary">{Math.ceil(entry.file.size / 1024)} KB</p>
                         </div>
                       </div>
-                      <MediaPlayer src={entry.previewUrl} type="audio" />
+                      <MediaPlayer durationHint={entry.duration} src={entry.previewUrl} type="audio" />
                     </div>
                   ) : (
                     <div className="flex min-h-[74px] items-center gap-3 p-3">

@@ -22,17 +22,18 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
   const accessToken = useAuthStore((state) => state.accessToken);
 
   useEffect(() => {
+    const registerPresence = () => {
+      socket.emit('join-server');
+      socket.emit('presence:refresh');
+      if (currentUser?.id) {
+        socket.emit('register', { userId: currentUser.id });
+      }
+    };
+
     if (accessToken && !socket.connected) {
-      connectSocket(accessToken)
-        .then(() => {
-          socket.emit('join-server');
-          if (currentUser?.id) {
-            socket.emit('register', { userId: currentUser.id });
-          }
-        })
-        .catch(() => {});
-    } else if (socket.connected && currentUser?.id) {
-      socket.emit('register', { userId: currentUser.id });
+      connectSocket(accessToken).then(registerPresence).catch(() => {});
+    } else if (socket.connected) {
+      registerPresence();
     }
 
     const handleUserJoin = (user) => {
@@ -44,11 +45,34 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
         userId: user.userId,
         name: user.name,
         displayName: user.username || user.name,
-        target: user.username,
+        target: user.username || user.phone || user.name,
         username: user.username,
+        phone: user.phone,
+        avatar: user.avatar,
         profileImage: user.profileImage,
         online: true,
         type: 'dm',
+      });
+    };
+
+    const handleOnlineUsers = (users = []) => {
+      users.forEach((user) => {
+        if (user.userId && currentUser?.id && user.userId === currentUser.id) {
+          return;
+        }
+
+        upsertContact({
+          userId: user.userId,
+          name: user.name,
+          displayName: user.username || user.name,
+          target: user.username || user.phone || user.name,
+          username: user.username,
+          phone: user.phone,
+          avatar: user.avatar,
+          profileImage: user.profileImage,
+          online: true,
+          type: 'dm',
+        });
       });
     };
 
@@ -56,6 +80,7 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
       markContactOnline({
         userId: user.userId,
         username: user.username,
+        phone: user.phone,
         online: false,
       });
     };
@@ -69,10 +94,10 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
         upsertContact({
           userId: senderUser.id,
           name: senderUser.name,
-          displayName: senderUser.username || senderUser.name || senderUser.email,
-          target: senderUser.username || senderUser.email,
-          username: senderUser.username || senderUser.email,
-          email: senderUser.email,
+          displayName: senderUser.username || senderUser.name || senderUser.phone,
+          target: senderUser.username || senderUser.phone || senderUser.name,
+          username: senderUser.username,
+          phone: senderUser.phone,
           avatar: senderUser.avatar,
           profileImage: senderUser.profileImage || senderUser.avatar,
           chatId: message.chatId,
@@ -223,6 +248,8 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
       });
     };
 
+    socket.on('connect', registerPresence);
+    socket.on('online-users', handleOnlineUsers);
     socket.on('new-user-join', handleUserJoin);
     socket.on('user:left', handleUserLeft);
     socket.on('receive-private-message', handleReceiveMessage);
@@ -237,7 +264,25 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
     socket.on('poll:new', handlePollNew);
     socket.on('poll:updated', handlePollUpdated);
 
+    const refreshPresence = () => {
+      if (socket.connected) {
+        socket.emit('presence:refresh');
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshPresence();
+      }
+    };
+
+    const refreshIntervalId = window.setInterval(refreshPresence, 15000);
+    window.addEventListener('focus', refreshPresence);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
+      socket.off('connect', registerPresence);
+      socket.off('online-users', handleOnlineUsers);
       socket.off('new-user-join', handleUserJoin);
       socket.off('user:left', handleUserLeft);
       socket.off('receive-private-message', handleReceiveMessage);
@@ -251,6 +296,9 @@ export const useSocket = ({ currentConversationKey, currentReceiver }) => {
       socket.off('message:read', handleMessageRead);
       socket.off('poll:new', handlePollNew);
       socket.off('poll:updated', handlePollUpdated);
+      window.clearInterval(refreshIntervalId);
+      window.removeEventListener('focus', refreshPresence);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [
     appendMessage,

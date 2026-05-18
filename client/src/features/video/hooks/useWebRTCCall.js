@@ -35,6 +35,7 @@ export const useWebRTCCall = (currentUser) => {
   const remoteVideoRef = useRef(null);
   const localVideoRef = useRef(null);
   const callRef = useRef(initialCall);
+  const preferredVideoDeviceIdRef = useRef('');
   const [call, setCallState] = useState(initialCall);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -65,11 +66,16 @@ export const useWebRTCCall = (currentUser) => {
     peerConnectionRef.current = null;
   }, []);
 
-  const getLocalStream = useCallback(async (facingMode = 'user') => {
+  const getLocalStream = useCallback(async (video = { facingMode: 'user' }) => {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
-      video: { facingMode },
+      video,
     });
+    const videoTrack = stream.getVideoTracks()[0];
+    const deviceId = videoTrack?.getSettings?.().deviceId;
+    if (deviceId) {
+      preferredVideoDeviceIdRef.current = deviceId;
+    }
     attachStream(stream);
     return stream;
   }, [attachStream]);
@@ -201,28 +207,67 @@ export const useWebRTCCall = (currentUser) => {
   const switchCamera = useCallback(async () => {
     const currentStream = localStreamRef.current;
     const currentTrack = currentStream?.getVideoTracks()[0];
-    const currentFacingMode = currentTrack?.getSettings?.().facingMode;
-    const nextFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-    const nextStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: nextFacingMode },
-    });
-    const nextTrack = nextStream.getVideoTracks()[0];
-    const sender = peerConnectionRef.current?.getSenders().find((entry) => entry.track?.kind === 'video');
+    const currentSettings = currentTrack?.getSettings?.() || {};
+    let videoConstraint = null;
 
-    if (sender && nextTrack) {
-      await sender.replaceTrack(nextTrack);
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter((device) => device.kind === 'videoinput');
+      const currentDeviceId = currentSettings.deviceId || preferredVideoDeviceIdRef.current;
+      const currentIndex = cameras.findIndex((device) => device.deviceId === currentDeviceId);
+      const nextCamera = cameras.length > 1
+        ? cameras[(currentIndex + 1 + cameras.length) % cameras.length]
+        : null;
+
+      if (nextCamera?.deviceId) {
+        videoConstraint = { deviceId: { exact: nextCamera.deviceId } };
+      }
+    } catch {
+      videoConstraint = null;
     }
 
-    if (currentStream && currentTrack && nextTrack) {
-      currentStream.removeTrack(currentTrack);
-      currentTrack.stop();
-      currentStream.addTrack(nextTrack);
-      attachStream(currentStream);
-    } else if (nextTrack) {
-      const stream = new MediaStream([nextTrack]);
-      attachStream(stream);
+    if (!videoConstraint) {
+      videoConstraint = {
+        facingMode: { ideal: currentSettings.facingMode === 'environment' ? 'user' : 'environment' },
+      };
     }
-  }, [attachStream]);
+
+    try {
+      // Mobile browsers often require the active camera track to be released before
+      // another facing mode can be opened.
+      currentTrack?.stop();
+      const nextStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraint });
+      const nextTrack = nextStream.getVideoTracks()[0];
+      const sender = peerConnectionRef.current?.getSenders().find((entry) => entry.track?.kind === 'video');
+
+      if (!nextTrack) {
+        throw new Error('No camera track available');
+      }
+
+      if (sender && nextTrack) {
+        await sender.replaceTrack(nextTrack);
+      }
+
+      const nextDeviceId = nextTrack?.getSettings?.().deviceId;
+      if (nextDeviceId) {
+        preferredVideoDeviceIdRef.current = nextDeviceId;
+      }
+
+      if (currentStream && currentTrack && nextTrack) {
+        currentStream.removeTrack(currentTrack);
+        currentStream.addTrack(nextTrack);
+        attachStream(currentStream);
+      } else if (nextTrack) {
+        const audioTracks = currentStream?.getAudioTracks?.() || [];
+        attachStream(new MediaStream([...audioTracks, nextTrack]));
+      }
+
+      setCameraOff(false);
+      setCall((current) => ({ ...current, reason: '' }));
+    } catch (error) {
+      setCall((current) => ({ ...current, reason: getMediaErrorMessage(error) }));
+    }
+  }, [attachStream, setCall]);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {

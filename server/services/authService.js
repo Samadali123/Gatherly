@@ -154,7 +154,7 @@ const login = async ({ email, identifier, emailOrPhone, password, role = 'person
   }
 
   if (!user.password) {
-    const error = new Error('Use Google login for this account');
+    const error = new Error('This account does not have a password. Please reset your password.');
     error.statusCode = 403;
     throw error;
   }
@@ -196,71 +196,6 @@ const userServiceFindByIdentifier = async (identifier) => {
     if (byPhone) return byPhone;
   }
   return userModel.findOne({ username: value.toLowerCase() });
-};
-
-const verifyGoogleCredential = async (credential) => {
-  if (!config.GOOGLE_CLIENT_ID) {
-    const error = new Error('Google login is not configured');
-    error.statusCode = 503;
-    throw error;
-  }
-
-  const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
-  if (!response.ok) {
-    const error = new Error('Google login failed. Please try again.');
-    error.statusCode = 401;
-    throw error;
-  }
-
-  const profile = await response.json();
-  if (profile.aud !== config.GOOGLE_CLIENT_ID || profile.email_verified !== 'true') {
-    const error = new Error('Google account could not be verified');
-    error.statusCode = 401;
-    throw error;
-  }
-
-  return profile;
-};
-
-const loginWithGoogle = async ({ credential, role = 'personal' }) => {
-  const profile = await verifyGoogleCredential(credential);
-  let user = await userModel.findOne({ googleId: profile.sub });
-
-  if (!user && profile.email) {
-    user = await userModel.findOne({ email: profile.email.toLowerCase() });
-  }
-
-  if (!user) {
-    user = await userModel.create({
-      name: profile.name || profile.email,
-      email: profile.email.toLowerCase(),
-      username: await buildUsername({ email: profile.email, name: profile.name }),
-      password: null,
-      role,
-      authProvider: 'google',
-      googleId: profile.sub,
-      profileImage: profile.picture || undefined,
-      avatar: profile.picture || undefined,
-      passwordChangedAt: null,
-    });
-  } else {
-    user.googleId = user.googleId || profile.sub;
-    user.authProvider = user.authProvider === 'password' ? 'password,google' : 'google';
-    if (['personal', 'professional'].includes(role) && user.role !== role) {
-      user.role = role;
-    }
-    if (profile.picture && !user.avatar) {
-      user.avatar = profile.picture;
-      user.profileImage = profile.picture;
-    }
-  }
-
-  const { accessToken, refreshToken } = generateTokens(user);
-  user.refreshTokenHash = hashToken(refreshToken);
-  user.lastLoginAt = new Date();
-  await user.save();
-
-  return { accessToken, refreshToken, user };
 };
 
 const refresh = async (refreshToken) => {
@@ -461,7 +396,6 @@ module.exports = {
   toAuthUser,
   register,
   login,
-  loginWithGoogle,
   refresh,
   requestPasswordReset,
   validatePasswordResetToken,

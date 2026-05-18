@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../../../services/api';
 import { useAuthStore } from '../../auth/authStore';
 import { useChatStore, useUiStore } from '../chatStore';
@@ -39,15 +39,15 @@ export const useChat = () => {
     (contact) =>
       contact.userId !== user?.id &&
       contact.username !== user?.username &&
-      contact.username !== user?.email
+      contact.phone !== user?.phone
   );
 
-const getConversationTarget = (conversation) =>
-    conversation?.target || conversation?.username || conversation?.email || conversation?.name;
+  const getConversationTarget = (conversation) =>
+    conversation?.target || conversation?.username || conversation?.phone || conversation?.name;
 
   const hasMessageId = (message) => Boolean(message?._id && message._id !== 'undefined' && message._id !== 'null');
 
-  useEffect(() => {
+  const loadContacts = useCallback(() => {
     if (!user) {
       return;
     }
@@ -60,13 +60,20 @@ const getConversationTarget = (conversation) =>
             ...contact,
             userId: contact.id || contact._id,
             displayName: contact.username || contact.name,
-            target: contact.username || contact.email || contact.phone,
+            target: contact.username || contact.phone || contact.name,
             type: 'dm',
           }))
         );
       })
       .catch((error) => pushToast(error.response?.data?.message || 'Unable to load users', 'error'));
   }, [pushToast, setContacts, user]);
+
+  useEffect(() => {
+    loadContacts();
+
+    window.addEventListener('gatherly:contacts-refresh', loadContacts);
+    return () => window.removeEventListener('gatherly:contacts-refresh', loadContacts);
+  }, [loadContacts]);
 
   const loadPins = async (chatId) => {
     if (!chatId) {
@@ -83,7 +90,7 @@ const getConversationTarget = (conversation) =>
 
   const selectConversation = async (conversation) => {
     const chatId = getConversationChatId(conversation, user);
-    const key = chatId || conversation?.username || conversation?.name;
+    const key = chatId || conversation?.target || conversation?.username || conversation?.phone || conversation?.name;
     setActiveConversation({ ...conversation, key, chatId });
     setSidebarOpen(false);
     setLoadingConversation(true);

@@ -43,7 +43,7 @@ const getConversation = async (req, res, next) => {
 const clearConversation = async (req, res, next) => {
   try {
     const senderUser = await userService.findById(req.user.userId);
-    const receiverUser = await userService.findByUsername(req.query.receiver);
+    const receiverUser = await userService.findByIdentifier(req.query.receiver);
 
     if (!senderUser || !receiverUser) {
       return sendSuccess(res, null, 'Conversation cleared');
@@ -63,7 +63,7 @@ const clearConversation = async (req, res, next) => {
 const markConversationRead = async (req, res, next) => {
   try {
     const senderUser = await userService.findById(req.user.userId);
-    const receiverUser = await userService.findByUsername(req.query.receiver);
+    const receiverUser = await userService.findByIdentifier(req.query.receiver);
 
     if (!senderUser || !receiverUser) {
       return sendSuccess(res, null, 'Conversation marked read');

@@ -7,7 +7,7 @@ const { buildDirectChatId, buildDirectChatIds, computeExpiresAt, isDirectChatId 
 const { buildReplyToPreview } = require('../utils/replyPreview');
 
 const resolveChatMeta = async ({ senderUser, receiver }) => {
-  const receiverUser = (await userService.findByUsername(receiver)) || (await userService.findByEmail(receiver)) || (await userService.findByPhone(receiver));
+  const receiverUser = (await userService.findByUsername(receiver)) || (await userService.findByPhone(receiver));
 
   if (receiverUser) {
     const block = await socialService.getBlockBetween(senderUser._id, receiverUser._id);

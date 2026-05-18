@@ -1,6 +1,7 @@
 import { Camera, CheckCircle2, Loader2, Save, X, XCircle } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import api from '../../../services/api';
+import { resolveMediaUrl } from '../../../shared/utils/mediaUrl';
 import { useAuthStore } from '../../auth/authStore';
 import { useUiStore } from '../../chat/chatStore';
 import { getCroppedImg } from '../utils/cropImage';
@@ -30,7 +31,7 @@ export default function EditProfilePage() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const avatarUrl = user?.avatar || user?.profileImage;
+  const avatarUrl = resolveMediaUrl(user?.avatar || user?.profileImage);
 
   useEffect(() => {
     if (!user) {

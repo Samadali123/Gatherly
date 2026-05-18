@@ -35,23 +35,33 @@ const countForUser = async (userId) => {
   return { followers, following };
 };
 
-const followUser = (followerId, followingId) =>
-  prisma.follow.upsert({
-    where: { followerId_followingId: { followerId, followingId } },
-    update: {},
-    create: { followerId, followingId },
-  });
+const followUser = async (followerId, followingId) => {
+  try {
+    return await prisma.follow.create({
+      data: { followerId, followingId },
+    });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return prisma.follow.findFirst({ where: { followerId, followingId } });
+    }
+    throw error;
+  }
+};
 
 const unfollowUser = async (followerId, followingId) => {
   await prisma.follow.deleteMany({ where: { followerId, followingId } });
 };
 
 const blockUser = async (blockerId, blockedId) => {
-  await prisma.block.upsert({
-    where: { blockerId_blockedId: { blockerId, blockedId } },
-    update: {},
-    create: { blockerId, blockedId },
-  });
+  try {
+    await prisma.block.create({
+      data: { blockerId, blockedId },
+    });
+  } catch (error) {
+    if (error.code !== 'P2002') {
+      throw error;
+    }
+  }
   await prisma.follow.deleteMany({
     where: {
       OR: [
