@@ -195,17 +195,10 @@ export default function ChatEmojiGifPicker({ anchorEl, onClose, onGifSelect, onS
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="p-3">
-<<<<<<< HEAD
             <label className="flex min-h-11 items-center gap-2 rounded-full border border-border-default bg-bg-secondary px-3 text-text-secondary focus-within:border-brand-primary">
               <Search size={16} strokeWidth={1.5} />
               <input
                 className="min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[14px] text-text-primary outline-none placeholder:text-text-secondary shadow-none ring-0 focus:border-0 focus:outline-none focus:ring-0"
-=======
-            <label className="flex min-h-11 items-center gap-2 rounded-full border border-border-default bg-bg-secondary px-3 text-text-secondary focus-within:border-brand-primary/50">
-              <Search size={16} strokeWidth={1.5} />
-              <input
-                className="gatherly-borderless-input min-w-0 flex-1 border-0 bg-transparent text-[14px] text-text-primary outline-none placeholder:text-text-secondary focus:border-0 focus:outline-none focus:ring-0"
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search GIFs..."
                 value={query}
@@ -230,22 +223,11 @@ export default function ChatEmojiGifPicker({ anchorEl, onClose, onGifSelect, onS
               </div>
             ) : null}
             {apiKey && loading && !gifs.length ? (
-              <div className="flex items-center justify-center gap-2 rounded-lg bg-brand-subtle px-3 py-4 text-[13px] text-text-primary">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-primary/25 border-t-brand-primary" />
-                Loading GIFs
-              </div>
-            ) : null}
-            {apiKey && !loading && !gifError && !gifs.length ? (
-              <div className="rounded-lg bg-bg-secondary px-3 py-4 text-center text-[13px] leading-[1.5] text-text-secondary">
-                No GIFs found.
-              </div>
-            ) : null}
-            {loading && !gifs.length ? (
               <div className="flex h-32 items-center justify-center">
                 <Spinner size="sm" />
               </div>
             ) : null}
-            {!loading && apiKey && !gifs.length ? (
+            {apiKey && !loading && !gifError && !gifs.length ? (
               <div className="rounded-lg bg-bg-secondary px-3 py-4 text-center text-[13px] leading-[1.5] text-text-secondary">
                 No GIFs found.
               </div>

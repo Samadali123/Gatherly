@@ -1,4 +1,4 @@
-import { Image, Palette, Plus, SendHorizontal, Video } from 'lucide-react';
+import { Image, Palette, Plus, SendHorizontal } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import api from '../../../services/api';
@@ -33,7 +33,6 @@ const groupByUser = (statuses) => {
 export default function StatusPage() {
   const { pushToast } = useUiStore();
   const imageRef = useRef(null);
-  const videoRef = useRef(null);
   const colorPickerRef = useRef(null);
   const [mine, setMine] = useState([]);
   const [updates, setUpdates] = useState([]);
@@ -136,7 +135,7 @@ export default function StatusPage() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-medium text-text-primary">{mine.length ? 'View my status' : 'No status yet'}</p>
-            <p className="text-[12px] text-text-secondary">{mine.length ? `${mine.length} update${mine.length > 1 ? 's' : ''}` : 'Create photo, video, or text status'}</p>
+            <p className="text-[12px] text-text-secondary">{mine.length ? `${mine.length} update${mine.length > 1 ? 's' : ''}` : 'Create photo or text status'}</p>
           </div>
           <Plus size={18} strokeWidth={1.5} />
         </button>
@@ -157,13 +156,12 @@ export default function StatusPage() {
             onClick={() => setComposerMode('media')}
             type="button"
           >
-            Photo or video
+            Photo
           </button>
         </div>
 
         <div className="mt-3 w-full max-w-full overflow-hidden rounded-xl border border-border-default">
           {draft.type === 'image' && draft.mediaUrl ? <img alt="Status preview" className="h-[min(62vh,420px)] min-h-[300px] w-full object-cover" src={draft.mediaUrl} /> : null}
-          {draft.type === 'video' && draft.mediaUrl ? <video className="h-[min(62vh,420px)] min-h-[300px] w-full bg-brand-primary object-contain" controls src={draft.mediaUrl} /> : null}
           {draft.type === 'text' ? (
             <div
               className="flex h-[min(58vh,420px)] min-h-[240px] w-full max-w-full items-center justify-center overflow-y-auto whitespace-pre-wrap break-words p-4 text-center leading-tight min-[380px]:min-h-[280px] sm:p-6"
@@ -276,15 +274,13 @@ export default function StatusPage() {
           </div>
         </div>
         ) : (
-          <div className="mt-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-default bg-white px-4 text-[14px]" onClick={() => imageRef.current?.click()} type="button"><Image size={16} /> Choose photo</button>
-            <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-default bg-white px-4 text-[14px]" onClick={() => videoRef.current?.click()} type="button"><Video size={16} /> Choose video</button>
+          <div className="mt-3">
+            <button className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-default bg-white px-4 text-[14px]" onClick={() => imageRef.current?.click()} type="button"><Image size={16} /> Choose photo</button>
           </div>
         )}
 
         <div className="mt-4 flex flex-wrap gap-2">
           <input accept="image/*" className="hidden" onChange={(event) => uploadMedia('image', event.target.files?.[0])} ref={imageRef} type="file" />
-          <input accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={(event) => uploadMedia('video', event.target.files?.[0])} ref={videoRef} type="file" />
           <button className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-primary px-5 text-[14px] font-medium text-white" disabled={loading} onClick={createStatus} type="button">
             {loading ? <ButtonSpinner /> : <SendHorizontal size={16} />} Add status
           </button>

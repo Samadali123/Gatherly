@@ -72,21 +72,6 @@ export const useChatStore = create((set) => ({
   threadOpen: false,
   threadParent: null,
   threadMessages: [],
-<<<<<<< HEAD
-  setContacts: (contacts) => set({ contacts: dedupeContacts(contacts) }),
-  upsertContact: (contact) =>
-    set((state) => {
-      const nextIdentity = contactIdentity(contact);
-      const contacts = state.contacts.map((entry) =>
-        contactIdentity(entry) === nextIdentity ? { ...entry, ...contact } : entry
-      );
-
-      if (!contacts.some((entry) => contactIdentity(entry) === nextIdentity)) {
-        contacts.push(contact);
-      }
-
-      return { contacts: dedupeContacts(contacts) };
-=======
   setContacts: (contacts) =>
     set((state) => {
       const mergedContacts = contacts.map((contact) => {
@@ -120,7 +105,6 @@ export const useChatStore = create((set) => ({
           )
         : [...state.contacts, contact];
       return { contacts };
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
     }),
   markContactOnline: ({ userId, username, phone, online }) =>
     set((state) => ({

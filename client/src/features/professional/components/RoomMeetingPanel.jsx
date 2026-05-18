@@ -64,13 +64,7 @@ function MeetingSocketControls({ onRemoved, socket, sessionId, setError }) {
 }
 
 export default function RoomMeetingPanel({ roomCode, onClose, socket, session, meetingState, mode = 'host' }) {
-<<<<<<< HEAD
   const terminalOverlayRef = useRef(false);
-=======
-  const meetingEndTimerRef = useRef(null);
-  const finalMessageTimerRef = useRef(null);
-  const intentionalExitRef = useRef(false);
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
   const [meeting, setMeeting] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -80,11 +74,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   const [userChoices, setUserChoices] = useState(null);
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const [meetingEndedOverlay, setMeetingEndedOverlay] = useState(false);
-<<<<<<< HEAD
   const [terminalMessage, setTerminalMessage] = useState('');
-=======
-  const [finalMessage, setFinalMessage] = useState('');
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
   const [leaveToasts, setLeaveToasts] = useState([]);
   const [controlsPosition, setControlsPosition] = useState(null);
   const [participantsOpen, setParticipantsOpen] = useState(false);
@@ -103,12 +93,13 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   const meetingId = roomCode;
   const hostActionText = 'Start meeting';
   const hostTitleText = 'Start room meeting';
-<<<<<<< HEAD
   const meetingEndedText = terminalMessage || 'Meeting Ended';
+
   const liveKitAudioOptions = useMemo(() => {
     if (!userChoices?.audioEnabled) return false;
     return { deviceId: userChoices.audioDeviceId ? { exact: userChoices.audioDeviceId } : undefined };
   }, [userChoices?.audioDeviceId, userChoices?.audioEnabled]);
+
   const liveKitVideoOptions = useMemo(() => {
     if (!userChoices?.videoEnabled) return false;
     return { deviceId: userChoices.videoDeviceId ? { exact: userChoices.videoDeviceId } : undefined };
@@ -122,24 +113,6 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
     terminalOverlayRef.current = true;
     meetingJoinedRef.current = false;
     setError('');
-=======
-  const meetingEndedText = finalMessage || (isHost ? "You've ended the meeting." : 'The host has ended this meeting.');
-
-  const showFinalMessageAndClose = (message) => {
-    setFinalMessage(message);
-    setMeetingEndedOverlay(true);
-    if (finalMessageTimerRef.current) {
-      window.clearTimeout(finalMessageTimerRef.current);
-    }
-    finalMessageTimerRef.current = window.setTimeout(() => {
-      setMeetingEndedOverlay(false);
-      setFinalMessage('');
-      onClose?.();
-    }, 1800);
-  };
-
-  const resetMeetingUi = () => {
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
     setMeeting(null);
     setUserChoices(null);
     setWaiting(false);
@@ -148,12 +121,9 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
     setConfirmEndOpen(false);
     setParticipantsOpen(false);
     setWaitingRoomOpen(false);
-<<<<<<< HEAD
     setLiveMeetingState({ active: false, pending: [], approved: [], activeParticipants: [] });
     setTerminalMessage(message);
     setMeetingEndedOverlay(true);
-=======
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
   };
 
   const fetchMeetingToken = async () => {
@@ -210,19 +180,10 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   const confirmEndMeeting = async () => {
     setLoading(true);
     try {
-      intentionalExitRef.current = true;
       await api.delete(`/rooms/${roomCode}/meeting`);
       socket?.emit('meeting_ended', { meetingId });
-<<<<<<< HEAD
-      showMeetingTerminal('Meeting Ended');
-=======
-      meetingJoinedRef.current = false;
-      resetMeetingUi();
-      setError('');
-      showFinalMessageAndClose("You've ended the meeting.");
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
+      showMeetingTerminal("You've Ended a meeting");
     } catch (error) {
-      intentionalExitRef.current = false;
       setError(error.response?.data?.message || 'Unable to end meeting.');
     } finally {
       setLoading(false);
@@ -231,13 +192,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
   };
 
   const handleLiveKitDisconnected = () => {
-<<<<<<< HEAD
     if (terminalOverlayRef.current) {
-=======
-    if (intentionalExitRef.current) {
-      meetingJoinedRef.current = false;
-      resetMeetingUi();
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
       return;
     }
 
@@ -252,7 +207,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       meetingJoinedRef.current = false;
     }
 
-    showMeetingTerminal('You have left');
+    showMeetingTerminal(isHost ? "You've Ended a meeting" : "You've left the meeting");
   };
 
   const leaveMeetingPanel = () => {
@@ -261,37 +216,16 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       return;
     }
 
-<<<<<<< HEAD
     if (waiting) {
-      showMeetingTerminal('You have left');
+      showMeetingTerminal("You've left the meeting");
       return;
     }
 
     setConfirmEndOpen(false);
     setParticipantsOpen(false);
     setWaitingRoomOpen(false);
-=======
-    if (meeting || meetingJoinedRef.current) {
-      intentionalExitRef.current = true;
-      if (!isHost && meetingJoinedRef.current) {
-        socket?.emit('participant_left', {
-          displayName: session?.alias || 'Participant',
-          meetingId,
-          userId: session?.sessionId,
-        });
-      }
-      meetingJoinedRef.current = false;
-      resetMeetingUi();
-      setError('');
-      showFinalMessageAndClose("You've left the meeting.");
-      return;
-    }
-
-    resetMeetingUi();
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
-    onClose?.();
+    showMeetingTerminal("You've left the meeting");
   };
-
 
   const startControlsDrag = (event) => {
     if (event.button !== 0) return;
@@ -343,15 +277,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       }
     };
     const closeAfterMeetingEnded = () => {
-<<<<<<< HEAD
-      showMeetingTerminal('Meeting Ended');
-=======
-      meetingJoinedRef.current = false;
-      resetMeetingUi();
-      setError('');
-      setLiveMeetingState({ active: false, pending: [], approved: [], activeParticipants: [] });
-      showFinalMessageAndClose(isHost ? "You've ended the meeting." : 'The host has ended this meeting.');
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
+      showMeetingTerminal(isHost ? "You've Ended a meeting" : "The meeting is ended by Admin");
     };
     const handleRoomEnded = closeAfterMeetingEnded;
     const handleWhiteboardOpened = () => {
@@ -466,7 +392,6 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                   <p className="text-[12px] font-medium uppercase tracking-[0.22em] text-text-secondary">Device check</p>
                   <h3 className="font-display text-[24px] font-medium text-text-primary">{isHost ? hostTitleText : 'Join room meeting'}</h3>
                 </div>
-<<<<<<< HEAD
                 <div className="gatherly-prejoin">
                   <PreJoin
                     camLabel="Camera"
@@ -482,25 +407,6 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                     userLabel="Display name"
                   />
                 </div>
-=======
-                <PreJoin
-                  camLabel="Camera"
-                  defaults={{
-                    username: session?.alias || 'Gatherly user',
-                    audioEnabled: true,
-                    videoEnabled: true,
-                  }}
-                  joinLabel={isHost ? hostActionText : 'Join meeting'}
-                  micLabel="Microphone"
-                  onError={(nextError) => {
-                    if (!intentionalExitRef.current) {
-                      setError(getMeetingErrorMessage(nextError));
-                    }
-                  }}
-                  onSubmit={(choices) => setUserChoices(choices)}
-                  userLabel="Display name"
-                />
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
                 {error ? (
                   <div className="mt-4 flex items-start gap-2 rounded-xl border border-[#f2cec1] bg-[#fff4ef] px-4 py-3 text-left text-[13px] text-text-primary">
                     <AlertCircle className="mt-0.5 shrink-0 text-brand-primary" size={16} strokeWidth={1.7} />
@@ -519,9 +425,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                 data-lk-theme="default"
                 onDisconnected={handleLiveKitDisconnected}
                 onError={(nextError) => {
-                  if (!intentionalExitRef.current) {
-                    setError(getMeetingErrorMessage(nextError));
-                  }
+                  setError(getMeetingErrorMessage(nextError));
                 }}
                 serverUrl={meeting.url}
                 token={meeting.token}
@@ -531,7 +435,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                 className="h-full"
               >
                 <MeetingSocketControls
-                  onRemoved={() => showMeetingTerminal('You have left')}
+                  onRemoved={() => showMeetingTerminal('The meeting is ended by Admin')}
                   sessionId={session?.sessionId}
                   setError={setError}
                   socket={socket}
@@ -603,7 +507,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                   style={controlsPosition ? { left: controlsPosition.x, top: controlsPosition.y } : undefined}
                 >
                   <div className="-mx-1 -mt-1 mb-3 cursor-move rounded-lg px-1 py-1" onMouseDown={startControlsDrag} role="presentation">
-                    <div className="flex items-center justify-between gap-3">
+                     <div className="flex items-center justify-between gap-3">
                       <p className="select-none text-[12px] font-medium uppercase tracking-[0.18em] text-text-secondary">Participants</p>
                       <button className="cursor-pointer text-text-secondary" onClick={() => setParticipantsOpen(false)} type="button"><X size={16} /></button>
                     </div>
@@ -665,7 +569,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                         <p className="font-medium text-text-primary">{request.alias}</p>
                         <div className="mt-3 flex gap-2">
                           <button className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-brand-primary px-3 text-[13px] font-medium text-white" onClick={() => socket?.emit('room:meeting:approve', { sessionId: request.sessionId })} type="button">
-                            <Check size={15} /> Admit
+                            Admit
                           </button>
                           <button className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full border border-border-default px-3 text-[13px] font-medium text-text-secondary" onClick={() => socket?.emit('room:meeting:deny', { sessionId: request.sessionId })} type="button">
                             Deny
@@ -699,9 +603,9 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
       ) : null}
       {meetingEndedOverlay ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(8,23,19,0.72)] px-4 backdrop-blur-[2px]">
-          <div className="relative rounded-2xl border border-white/15 bg-[#081713]/80 px-8 py-6 text-center shadow-[0_24px_90px_rgba(0,0,0,0.34)]">
+          <div className="relative -translate-y-8 rounded-2xl border border-white/15 bg-[#081713]/85 px-12 py-10 text-center shadow-[0_24px_90px_rgba(0,0,0,0.34)] animate-in fade-in zoom-in-95 duration-200">
             <button
-              className="absolute right-4 top-4 text-white/60 hover:text-white transition-colors"
+              className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-all"
               onClick={() => {
                 setMeetingEndedOverlay(false);
                 setTerminalMessage('');
@@ -713,7 +617,6 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
               <X size={18} strokeWidth={2} />
             </button>
             <p className="font-display text-[26px] font-medium text-white sm:text-[34px]">{meetingEndedText}</p>
-            <p className="mt-2 text-[13px] text-white/70">Returning to room...</p>
           </div>
         </div>
       ) : null}

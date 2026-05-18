@@ -145,12 +145,8 @@ setSocketRefreshHandler(async () => {
 });
 
 api.interceptors.request.use((config) => {
-<<<<<<< HEAD
-  const token = sessionInvalidated ? null : useAuthStore.getState().accessToken;
-=======
   config.headers = config.headers || {};
-  const token = useAuthStore.getState().accessToken;
->>>>>>> d31212618874aadfaf24e00d1a37e4d63399429f
+  const token = sessionInvalidated ? null : useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

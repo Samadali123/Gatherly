@@ -108,13 +108,13 @@ const register = async ({ name, email, phone, emailOrPhone, password, role = 'pe
   }
 
   if (nextEmail && (await userModel.findOne({ email: nextEmail }))) {
-    const error = new Error('Email already registered');
+    const error = new Error('Account already exists');
     error.statusCode = 409;
     throw error;
   }
 
   if (nextPhone && (await userModel.findOne({ phone: nextPhone }))) {
-    const error = new Error('Mobile number already registered');
+    const error = new Error('Account already exists');
     error.statusCode = 409;
     throw error;
   }
@@ -148,7 +148,7 @@ const login = async ({ email, identifier, emailOrPhone, password, role = 'person
   const user = await userServiceFindByIdentifier(identifier || emailOrPhone || email);
 
   if (!user) {
-    const error = new Error('Invalid credentials');
+    const error = new Error('You dont have an Account');
     error.statusCode = 401;
     throw error;
   }

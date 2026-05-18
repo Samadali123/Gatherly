@@ -107,7 +107,6 @@ export default function StatusViewer({ canReply = false, groups = null, onClose,
 
         <div className="flex min-h-0 flex-1 items-center justify-center">
           {status.type === 'image' ? <img alt="Status" className="status-fade-in h-full w-full object-contain" key={status._id} src={status.mediaUrl} /> : null}
-          {status.type === 'video' ? <video autoPlay className="status-fade-in h-full w-full object-contain" controls key={status._id} src={status.mediaUrl} /> : null}
           {status.type === 'text' ? (
             <div
               className="status-fade-in flex h-full w-full items-center justify-center overflow-y-auto whitespace-pre-wrap break-words px-5 py-24 text-center leading-tight sm:px-8"

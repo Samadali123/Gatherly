@@ -10,6 +10,8 @@ const fieldLabels = {
 const friendlyByMessage = {
   'Invalid credentials': 'Email or password is incorrect.',
   'Email already registered': 'This email is already registered. Please sign in instead.',
+  'You dont have an Account': 'You dont have an Account',
+  'Account already exists': 'Account already exists',
   'Refresh token missing': 'Please sign in to continue.',
   'Invalid or missing token': 'Please sign in to continue.',
   'Validation failed': 'Please check the highlighted details and try again.',
