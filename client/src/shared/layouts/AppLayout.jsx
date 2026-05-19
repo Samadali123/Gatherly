@@ -32,7 +32,7 @@ export default function AppLayout() {
 
                   return (
                     <Link
-                      className={`rounded-full border px-4 py-2 text-[13px] font-medium transition ${
+                      className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-[13px] font-medium transition ${
                         active
                           ? 'border-brand-primary bg-brand-subtle text-brand-primary'
                           : 'border-border-default bg-white text-text-secondary hover:border-brand-primary hover:text-brand-primary'

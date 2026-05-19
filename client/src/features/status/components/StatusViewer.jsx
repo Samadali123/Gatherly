@@ -97,7 +97,6 @@ export default function StatusViewer({ canReply = false, groups = null, onClose,
           <div className="flex items-center justify-between gap-3 text-white">
             <div className="min-w-0">
               <p className="truncate text-[15px] font-medium">{activeUser?.name || activeUser?.username || 'Status'}</p>
-              <p className="text-[12px] text-white/70">{progress}{storyGroups.length > 1 ? ` / ${groupIndex + 1} of ${storyGroups.length}` : ''}</p>
             </div>
             <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/12" onClick={onClose} type="button">
               <X size={18} strokeWidth={1.5} />

@@ -140,14 +140,14 @@ export default function AnonRoomPage() {
       try {
         const response = await api.get(`/rooms/${code}/participants`);
         setParticipants(response.data.data || []);
-      } catch {}
+      } catch { }
     });
 
     anonSocket.on('room:left', async () => {
       try {
         const response = await api.get(`/rooms/${code}/participants`);
         setParticipants(response.data.data || []);
-      } catch {}
+      } catch { }
     });
 
     anonSocket.on('room:participant:kicked', ({ sessionId, message }) => {
@@ -402,18 +402,18 @@ export default function AnonRoomPage() {
             <p className="truncate font-display text-[18px] font-medium text-text-primary">{room?.name || 'Anonymous room'}</p>
           </div>
           <div className="scrollbar-chat -mx-1 flex max-w-full flex-nowrap items-center gap-2 overflow-x-auto px-1 pb-1 lg:justify-end lg:pb-0">
-            <span className="rounded-full border border-border-default bg-brand-subtle px-3 py-2 text-[12px] font-medium uppercase tracking-[0.14em] text-text-secondary">
+            <span className="shrink-0 whitespace-nowrap rounded-full border border-border-default bg-brand-subtle px-3 py-2 text-[12px] font-medium uppercase tracking-[0.14em] text-text-secondary">
               {roomEnded ? 'Ended' : roomCountdown}
             </span>
-            <Link className="rounded-full border border-border-default bg-white px-4 py-2 text-[13px] font-medium text-text-secondary hover:border-brand-primary hover:text-brand-primary" to="/chat">
+            <Link className="shrink-0 whitespace-nowrap rounded-full border border-border-default bg-white px-4 py-2 text-[13px] font-medium text-text-secondary hover:border-brand-primary hover:text-brand-primary" to="/chat">
               Chat
             </Link>
-            <Link className="rounded-full border border-brand-primary bg-brand-subtle px-4 py-2 text-[13px] font-medium text-brand-primary" to="/rooms/new">
+            <Link className="shrink-0 whitespace-nowrap rounded-full border border-brand-primary bg-brand-subtle px-4 py-2 text-[13px] font-medium text-brand-primary" to="/rooms/new">
               Rooms
             </Link>
             {canOpenMeeting ? (
               <button
-                className="rounded-full bg-brand-primary px-4 py-2 text-[13px] font-medium text-white"
+                className="shrink-0 whitespace-nowrap rounded-full bg-brand-primary px-4 py-2 text-[13px] font-medium text-white"
                 onClick={() => {
                   setMeetingMode(canKick ? 'host' : 'join');
                   setMeetingOpen(true);
@@ -426,7 +426,7 @@ export default function AnonRoomPage() {
             {session?.sessionId && !kicked ? (
               canKick ? (
                 <button
-                  className="rounded-full border border-[#f2cec1] bg-white px-4 py-2 text-[13px] font-medium text-[#9a3412] hover:bg-[#fff4ef]"
+                  className="shrink-0 whitespace-nowrap rounded-full border border-[#f2cec1] bg-white px-4 py-2 text-[13px] font-medium text-[#9a3412] hover:bg-[#fff4ef]"
                   onClick={() => setDeleteConfirmOpen(true)}
                   type="button"
                 >
@@ -437,114 +437,114 @@ export default function AnonRoomPage() {
           </div>
         </nav>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-6">
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border-default bg-bg-primary shadow-card">
-          {meetingState.active && session?.sessionId && meetingState.hostSessionId !== session.sessionId ? (
-            <div className="shrink-0 border-b border-border-default bg-brand-subtle px-5 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-brand-primary">Live meeting</p>
-                  <p className="text-[14px] text-text-primary">{meetingState.hostAlias || 'Host'} started a room meeting.</p>
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-6">
+          <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border-default bg-bg-primary shadow-card">
+            {meetingState.active && session?.sessionId && meetingState.hostSessionId !== session.sessionId ? (
+              <div className="shrink-0 border-b border-border-default bg-brand-subtle px-5 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-brand-primary">Live meeting</p>
+                    <p className="text-[14px] text-text-primary">{meetingState.hostAlias || 'Host'} started a room meeting.</p>
+                  </div>
+                  <button
+                    className="min-h-10 rounded-full bg-brand-primary px-4 text-[13px] font-medium text-white"
+                    onClick={() => {
+                      setMeetingMode('join');
+                      setMeetingOpen(true);
+                    }}
+                    type="button"
+                  >
+                    Join meeting
+                  </button>
                 </div>
-                <button
-                  className="min-h-10 rounded-full bg-brand-primary px-4 text-[13px] font-medium text-white"
-                  onClick={() => {
-                    setMeetingMode('join');
-                    setMeetingOpen(true);
-                  }}
-                  type="button"
-                >
-                  Join meeting
-                </button>
-              </div>
-            </div>
-          ) : null}
-          {kicked ? (
-            <div className="shrink-0 border-b border-[#f2cec1] bg-[#fff4ef] px-5 py-3 text-[14px] font-medium text-[#7c2d12]">
-              You are no longer in this room.
-            </div>
-          ) : null}
-          {roomEnded ? (
-            <div className="shrink-0 border-b border-[#f2cec1] bg-[#fff4ef] px-5 py-3 text-[14px] font-medium text-[#7c2d12]">
-              {roomEndedMessage}
-            </div>
-          ) : null}
-          {pins[0] ? (
-          <div className="shrink-0 border-b border-border-default px-5 py-4">
-              <button
-                className="flex w-full items-center justify-between rounded-xl border border-border-default bg-white px-4 py-3 text-left"
-                onClick={() => setPinsOpen(true)}
-                type="button"
-              >
-                <span className="truncate text-[14px] text-text-primary">Pinned: {pins[0].content}</span>
-                <span className="text-[12px] font-medium uppercase tracking-[0.16em] text-brand-primary">View all</span>
-              </button>
-          </div>
-          ) : null}
-
-            <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-2 py-4 sm:px-5 sm:py-6" data-chat-conversation-area>
-            <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end gap-4">
-            {polls.map((poll) => (
-              <div className="rounded-xl border border-border-default bg-white p-4 shadow-card" key={poll.id || poll._id}>
-                <p className="text-[15px] font-medium text-text-primary">{poll.question}</p>
-                <div className="mt-3 space-y-2">
-                  {poll.options.map((option) => (
-                    <button
-                      className="flex min-h-11 w-full items-center justify-between rounded-xl border border-border-default bg-bg-secondary px-3 py-2 text-left text-[14px] text-text-primary transition hover:border-brand-primary hover:bg-brand-subtle"
-                      key={option.id}
-                      onClick={() => voteAnonPoll(poll.id || poll._id, option.id)}
-                      disabled={kicked || roomEnded}
-                      type="button"
-                    >
-                      <span>{option.text}</span>
-                      <span className="rounded-full bg-white px-2 py-1 text-[12px] text-text-secondary">{option.voteCount || 0}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {visibleMessages.map((message) => (
-              <MessageBubble
-                isOwnOverride={message.sessionId === session?.sessionId}
-                key={message._id || `${message.sessionId}-${message.createdAt}`}
-                message={mapAnonMessage(message)}
-                onPin={pinMessage}
-                onReact={reactToMessage}
-                onReply={openReplies}
-                onReplyPreviewClick={focusOriginalMessage}
-                onToggleReaction={reactToMessage}
-                allowPin={Boolean(message._id)}
-                allowReply={Boolean(message._id)}
-                highlighted={String(highlightedMessageId) === String(message._id)}
-              />
-            ))}
-            {!visibleMessages.length && !polls.length ? (
-              <div className="rounded-xl border border-dashed border-border-default bg-white px-4 py-8 text-center text-[14px] text-text-secondary">
-                No messages yet. Start the room with a simple hello.
               </div>
             ) : null}
-            </div>
-          </div>
+            {kicked ? (
+              <div className="shrink-0 border-b border-[#f2cec1] bg-[#fff4ef] px-5 py-3 text-[14px] font-medium text-[#7c2d12]">
+                You are no longer in this room.
+              </div>
+            ) : null}
+            {roomEnded ? (
+              <div className="shrink-0 border-b border-[#f2cec1] bg-[#fff4ef] px-5 py-3 text-[14px] font-medium text-[#7c2d12]">
+                {roomEndedMessage}
+              </div>
+            ) : null}
+            {pins[0] ? (
+              <div className="shrink-0 border-b border-border-default px-5 py-4">
+                <button
+                  className="flex w-full items-center justify-between rounded-xl border border-border-default bg-white px-4 py-3 text-left"
+                  onClick={() => setPinsOpen(true)}
+                  type="button"
+                >
+                  <span className="truncate text-[14px] text-text-primary">Pinned: {pins[0].content}</span>
+                  <span className="text-[12px] font-medium uppercase tracking-[0.16em] text-brand-primary">View all</span>
+                </button>
+              </div>
+            ) : null}
 
-          <div className="shrink-0 border-t border-border-default bg-bg-primary">
-            <div className="mx-auto max-w-3xl">
-              <ChatInput
-                disabled={kicked || roomEnded || !session}
-                onCreatePoll={createAnonPoll}
-                onSend={(content, attachments) => sendAnonMessage(content, attachments)}
-                onUploadAttachments={uploadAnonAttachments}
-              />
+            <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-2 py-4 sm:px-5 sm:py-6" data-chat-conversation-area>
+              <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end gap-4">
+                {polls.map((poll) => (
+                  <div className="rounded-xl border border-border-default bg-white p-4 shadow-card" key={poll.id || poll._id}>
+                    <p className="text-[15px] font-medium text-text-primary">{poll.question}</p>
+                    <div className="mt-3 space-y-2">
+                      {poll.options.map((option) => (
+                        <button
+                          className="flex min-h-11 w-full items-center justify-between rounded-xl border border-border-default bg-bg-secondary px-3 py-2 text-left text-[14px] text-text-primary transition hover:border-brand-primary hover:bg-brand-subtle"
+                          key={option.id}
+                          onClick={() => voteAnonPoll(poll.id || poll._id, option.id)}
+                          disabled={kicked || roomEnded}
+                          type="button"
+                        >
+                          <span>{option.text}</span>
+                          <span className="rounded-full bg-white px-2 py-1 text-[12px] text-text-secondary">{option.voteCount || 0}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {visibleMessages.map((message) => (
+                  <MessageBubble
+                    isOwnOverride={message.sessionId === session?.sessionId}
+                    key={message._id || `${message.sessionId}-${message.createdAt}`}
+                    message={mapAnonMessage(message)}
+                    onPin={pinMessage}
+                    onReact={reactToMessage}
+                    onReply={openReplies}
+                    onReplyPreviewClick={focusOriginalMessage}
+                    onToggleReaction={reactToMessage}
+                    allowPin={Boolean(message._id)}
+                    allowReply={Boolean(message._id)}
+                    highlighted={String(highlightedMessageId) === String(message._id)}
+                  />
+                ))}
+                {!visibleMessages.length && !polls.length ? (
+                  <div className="rounded-xl border border-dashed border-border-default bg-white px-4 py-8 text-center text-[14px] text-text-secondary">
+                    No messages yet. Start the room with a simple hello.
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </section>
 
-        <aside className="scrollbar-chat hidden min-h-0 overflow-y-auto rounded-xl border border-border-default bg-bg-primary p-5 shadow-card xl:block">
-          <p className="text-[12px] font-medium uppercase tracking-[0.22em] text-text-secondary">Participants</p>
-          <div className="mt-4">
-            <ParticipantList currentSessionId={session?.sessionId} canKick={canKick} onKick={kickParticipant} participants={participants} />
-          </div>
-        </aside>
-      </div>
+            <div className="shrink-0 border-t border-border-default bg-bg-primary">
+              <div className="mx-auto max-w-3xl">
+                <ChatInput
+                  disabled={kicked || roomEnded || !session}
+                  onCreatePoll={createAnonPoll}
+                  onSend={(content, attachments) => sendAnonMessage(content, attachments)}
+                  onUploadAttachments={uploadAnonAttachments}
+                />
+              </div>
+            </div>
+          </section>
+
+          <aside className="scrollbar-chat hidden min-h-0 overflow-y-auto rounded-xl border border-border-default bg-bg-primary p-5 shadow-card xl:block">
+            <p className="text-[12px] font-medium uppercase tracking-[0.22em] text-text-secondary">Participants</p>
+            <div className="mt-4">
+              <ParticipantList currentSessionId={session?.sessionId} canKick={canKick} onKick={kickParticipant} participants={participants} />
+            </div>
+          </aside>
+        </div>
       </div>
 
       <JoinRoomModal

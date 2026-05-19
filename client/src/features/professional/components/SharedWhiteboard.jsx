@@ -96,7 +96,7 @@ export default function SharedWhiteboard({ meetingId, onClose, readOnly = false,
           )}
         </div>
       </header>
-      <div className="relative h-[calc(100dvh-65px)] min-h-0 flex-1 overflow-hidden overscroll-none">
+      <div className="relative flex-1 min-h-0 overflow-hidden overscroll-none">
         <Tldraw components={components} store={storeRef.current} />
       </div>
     </div>

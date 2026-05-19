@@ -443,42 +443,42 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
                 <VideoConference />
               </LiveKitRoom>
               {isHost ? (
-                <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-2 sm:left-4 sm:top-4">
+                <div className="absolute left-2 top-4 right-2 z-10 grid grid-cols-2 gap-2 sm:left-4 sm:top-4 sm:right-auto sm:flex sm:flex-wrap">
                   <button
-                    className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/20 bg-white px-4 text-[13px] font-medium text-brand-primary shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
+                    className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white px-2 text-[12px] font-medium text-brand-primary shadow-[0_12px_40px_rgba(0,0,0,0.22)] sm:gap-2 sm:w-auto sm:px-4 sm:text-[13px]"
                     onClick={openHostWhiteboard}
                     type="button"
                   >
-                    <PenLine size={16} strokeWidth={1.7} />
-                    Share Whiteboard
+                    <PenLine size={15} className="sm:w-[16px] sm:h-[16px]" strokeWidth={1.7} />
+                    <span className="truncate">Share Whiteboard</span>
                   </button>
                   <button
-                    className="min-h-10 rounded-full bg-[#c2410c] px-4 text-[13px] font-medium text-white shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
+                    className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full bg-[#c2410c] px-2 text-[12px] font-medium text-white shadow-[0_12px_40px_rgba(0,0,0,0.22)] sm:gap-2 sm:w-auto sm:px-4 sm:text-[13px]"
                     onClick={() => setConfirmEndOpen(true)}
                     type="button"
                   >
-                    End Meeting
+                    <span className="truncate">End Meeting</span>
                   </button>
                   <button
-                    className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/20 bg-white px-4 text-[13px] font-medium text-brand-primary shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
+                    className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white px-2 text-[12px] font-medium text-brand-primary shadow-[0_12px_40px_rgba(0,0,0,0.22)] sm:gap-2 sm:w-auto sm:px-4 sm:text-[13px]"
                     onClick={() => setWaitingRoomOpen((current) => !current)}
                     type="button"
                   >
-                    <Users size={16} strokeWidth={1.7} />
-                    Waiting room{pendingRequests.length ? ` (${pendingRequests.length})` : ''}
+                    <Users size={15} className="sm:w-[16px] sm:h-[16px]" strokeWidth={1.7} />
+                    <span className="truncate">Waiting room{pendingRequests.length ? ` (${pendingRequests.length})` : ''}</span>
                   </button>
                   <button
-                    className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/20 bg-white px-4 text-[13px] font-medium text-brand-primary shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
+                    className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white px-2 text-[12px] font-medium text-brand-primary shadow-[0_12px_40px_rgba(0,0,0,0.22)] sm:gap-2 sm:w-auto sm:px-4 sm:text-[13px]"
                     onClick={() => setParticipantsOpen((current) => !current)}
                     type="button"
                   >
-                    <Users size={16} strokeWidth={1.7} />
-                    View participants{manageableParticipants.length ? ` (${manageableParticipants.length})` : ''}
+                    <Users size={15} className="sm:w-[16px] sm:h-[16px]" strokeWidth={1.7} />
+                    <span className="truncate">Participants{manageableParticipants.length ? ` (${manageableParticipants.length})` : ''}</span>
                   </button>
                 </div>
               ) : null}
               {isHost && waitingRoomOpen ? (
-                <div className="absolute inset-x-2 bottom-2 z-10 max-h-[45vh] overflow-y-auto rounded-xl border border-white/15 bg-white p-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-4 sm:w-[300px]">
+                <div className="hidden sm:block sm:absolute sm:right-4 sm:top-4 sm:w-[300px] sm:z-10 sm:max-h-[45vh] sm:overflow-y-auto sm:rounded-xl sm:border sm:border-white/15 sm:bg-white sm:p-4 sm:shadow-[0_18px_60px_rgba(0,0,0,0.28)]">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-text-secondary">Waiting room</p>
                     <button className="text-text-secondary" onClick={() => setWaitingRoomOpen(false)} type="button"><X size={16} /></button>
@@ -502,7 +502,7 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
               ) : null}
               {isHost && participantsOpen ? (
                 <div
-                  className={`z-10 max-h-[45vh] w-[min(92vw,320px)] overflow-y-auto rounded-xl border border-white/15 bg-white p-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] ${controlsPosition ? 'fixed' : 'absolute bottom-2 right-2 sm:bottom-4 sm:right-4'}`}
+                  className={`z-10 hidden sm:block sm:absolute sm:max-h-[45vh] sm:w-[320px] sm:overflow-y-auto sm:rounded-xl sm:border sm:border-white/15 sm:bg-white sm:p-4 sm:shadow-[0_18px_60px_rgba(0,0,0,0.28)] ${controlsPosition ? 'fixed' : 'sm:bottom-4 sm:right-4'}`}
                   data-meeting-control-panel
                   style={controlsPosition ? { left: controlsPosition.x, top: controlsPosition.y } : undefined}
                 >
@@ -649,6 +649,59 @@ export default function RoomMeetingPanel({ roomCode, onClose, socket, session, m
         </div>
       ) : null}
       {whiteboardOpen ? <SharedWhiteboard meetingId={meetingId} onClose={closeHostWhiteboard} readOnly={whiteboardReadOnly} roomCode={roomCode} socket={socket} /> : null}
+      {isHost && waitingRoomOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 px-4 sm:hidden animate-in fade-in duration-200">
+          <div className="w-full max-w-sm max-h-[75vh] overflow-y-auto rounded-xl border border-white/15 bg-white p-4 shadow-[0_24px_80px_rgba(0,0,0,0.35)] animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[12px] font-medium uppercase tracking-[0.18em] text-text-secondary">Waiting room</p>
+              <button className="text-text-secondary" onClick={() => setWaitingRoomOpen(false)} type="button"><X size={16} /></button>
+            </div>
+            <div className="mt-3 space-y-3">
+              {pendingRequests.length ? pendingRequests.map((request) => (
+                <div className="rounded-xl border border-border-default bg-bg-secondary p-3" key={request.sessionId}>
+                  <p className="font-medium text-text-primary">{request.alias}</p>
+                  <div className="mt-3 flex gap-2">
+                    <button className="min-h-9 flex-1 rounded-full bg-brand-primary px-3 text-[12px] font-medium text-white" onClick={() => socket?.emit('room:meeting:approve', { sessionId: request.sessionId })} type="button">
+                      Admit
+                    </button>
+                    <button className="min-h-9 flex-1 rounded-full border border-border-default px-3 text-[12px] font-medium text-text-secondary" onClick={() => socket?.emit('room:meeting:deny', { sessionId: request.sessionId })} type="button">
+                      Deny
+                    </button>
+                  </div>
+                </div>
+              )) : <p className="text-[14px] leading-[1.6] text-text-secondary">No one is waiting yet.</p>}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isHost && participantsOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 px-4 sm:hidden animate-in fade-in duration-200">
+          <div className="w-full max-w-sm max-h-[75vh] overflow-y-auto rounded-xl border border-white/15 bg-white p-4 shadow-[0_24px_80px_rgba(0,0,0,0.35)] animate-in zoom-in-95 duration-200">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="select-none text-[12px] font-medium uppercase tracking-[0.18em] text-text-secondary">Participants</p>
+              <button className="cursor-pointer text-text-secondary" onClick={() => setParticipantsOpen(false)} type="button"><X size={16} /></button>
+            </div>
+            <div className="mt-3 space-y-3">
+              {manageableParticipants.length ? manageableParticipants.map((participant) => (
+                  <div className="rounded-xl border border-border-default bg-bg-secondary p-3" key={participant.sessionId}>
+                    <p className="truncate font-medium text-text-primary">{participant.displayName || 'Participant'}</p>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <button className="inline-flex min-h-9 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary" onClick={() => socket?.emit('room:meeting:force-mute', { sessionId: participant.sessionId })} type="button" title="Mute microphone">
+                        <MicOff size={15} />
+                      </button>
+                      <button className="inline-flex min-h-9 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary" onClick={() => socket?.emit('room:meeting:force-camera-off', { sessionId: participant.sessionId })} type="button" title="Turn camera off">
+                        <VideoOff size={15} />
+                      </button>
+                      <button className="inline-flex min-h-9 items-center justify-center rounded-full border border-[#f2cec1] bg-[#fff4ef] text-[#9a3412]" onClick={() => socket?.emit('room:meeting:remove-participant', { sessionId: participant.sessionId })} type="button" title="Remove participant">
+                        <UserX size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )) : <p className="text-[14px] leading-[1.6] text-text-secondary">No participants joined yet.</p>}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
